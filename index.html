@@ -55,15 +55,13 @@
     // URL GOOGLE SCRIPT ANDA
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxiDToc3gBf0sWDvPe81G5rMpY_mixbY5JhcbLUvmjZgzv1qTSx7BWtOvfXdHMQg7nfUw/exec';
 
-    // --- LOGIKA ANTI-LOOP (PERBAIKAN) ---
+    // --- LOGIKA ANTI-LOOP ---
     const urlParams = new URLSearchParams(window.location.search);
     const isLogout = urlParams.get('status') === 'logout';
 
     if (isLogout) {
-        // Hapus HANYA data sesi login, jangan gunakan localStorage.clear()
         localStorage.removeItem('user_data');
         localStorage.removeItem('nisn');
-        
         window.history.replaceState({}, document.title, window.location.pathname);
     } else {
         const savedData = localStorage.getItem('user_data');
@@ -73,7 +71,6 @@
             window.location.replace('dashboardortu.html');
         }
     }
-    // ---------------------------------------
 
     const loginForm = document.getElementById('login-form');
     const btnLogin = loginForm.querySelector('button');
@@ -90,37 +87,37 @@
         btnLogin.classList.add('opacity-75', 'cursor-not-allowed');
 
         fetch(`${SCRIPT_URL}?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`)
-    .then(async response => {
-        // Cek apakah response berupa JSON sebelum diproses
-        const contentType = response.headers.get("content-type");
-        if (!response.ok || !contentType || !contentType.includes("application/json")) {
-            throw new Error("URL Script tidak valid, belum di-deploy sebagai 'Anyone', atau server error.");
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.result === 'success') {
-            localStorage.setItem('user_data', JSON.stringify(data));
-            localStorage.setItem('nisn', username);
-            localStorage.setItem('user_pass', password); 
-            
-            window.location.href = 'dashboardortu.html';
-        } else {
-            alert("Gagal: " + (data.message || "NISN/Password Salah"));
-            resetButton(originalText);
-        }
-    })
-    .catch(error => {
-        console.error("Detail Error:", error);
-        alert("Gagal terhubung: " + error.message);
-        resetButton(originalText);
-    });
+            .then(async response => {
+                const contentType = response.headers.get("content-type");
+                if (!response.ok || !contentType || !contentType.includes("application/json")) {
+                    throw new Error("URL Script tidak valid, belum di-deploy sebagai 'Anyone', atau server error.");
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.result === 'success') {
+                    localStorage.setItem('user_data', JSON.stringify(data));
+                    localStorage.setItem('nisn', username);
+                    localStorage.setItem('user_pass', password); 
+                    
+                    window.location.href = 'dashboardortu.html';
+                } else {
+                    alert("Gagal: " + (data.message || "NISN/Password Salah"));
+                    resetButton(originalText);
+                }
+            })
+            .catch(error => {
+                console.error("Detail Error:", error);
+                alert("Gagal terhubung: " + error.message);
+                resetButton(originalText);
+            });
+    }); // <-- ✅ PENUTUP ADDEVENTLISTENER SUDAH DITAMBAHKAN DI SINI
 
-function resetButton(text) {
-    btnLogin.innerText = text;
-    btnLogin.disabled = false;
-    btnLogin.classList.remove('opacity-75', 'cursor-not-allowed');
-}
-    </script>
+    function resetButton(text) {
+        btnLogin.innerText = text;
+        btnLogin.disabled = false;
+        btnLogin.classList.remove('opacity-75', 'cursor-not-allowed');
+    }
+</script>
 </body>
 </html>
