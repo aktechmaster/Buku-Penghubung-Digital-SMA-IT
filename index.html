@@ -90,15 +90,19 @@
         btnLogin.classList.add('opacity-75', 'cursor-not-allowed');
 
         fetch(`${SCRIPT_URL}?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`)
-    .then(response => response.json())
+    .then(async response => {
+        // Cek apakah response berupa JSON sebelum diproses
+        const contentType = response.headers.get("content-type");
+        if (!response.ok || !contentType || !contentType.includes("application/json")) {
+            throw new Error("URL Script tidak valid, belum di-deploy sebagai 'Anyone', atau server error.");
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.result === 'success') {
             localStorage.setItem('user_data', JSON.stringify(data));
             localStorage.setItem('nisn', username);
-            
-            // --- TAMBAHKAN BARIS INI ---
             localStorage.setItem('user_pass', password); 
-            // ---------------------------
             
             window.location.href = 'dashboardortu.html';
         } else {
@@ -107,11 +111,10 @@
         }
     })
     .catch(error => {
-        console.error(error);
-        alert("Gangguan koneksi internet atau Script URL salah.");
+        console.error("Detail Error:", error);
+        alert("Gagal terhubung: " + error.message);
         resetButton(originalText);
     });
-});
 
 function resetButton(text) {
     btnLogin.innerText = text;
