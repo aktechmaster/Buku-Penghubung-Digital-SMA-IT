@@ -557,23 +557,27 @@
         </div>
 
         <!-- MODAL GANTI PASSWORD (POP UP)-->
-        <div id="modalGantiPass" class="fixed inset-0 z-[100] hidden">
-            <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="tutupModalPassword()"></div>
-            <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-sm p-6 bg-white rounded-2xl shadow-2xl">
-                <h3 class="text-lg font-bold mb-4">Ganti Password</h3>
-                <form onsubmit="prosesGantiPass(event)" class="space-y-4">
-                    <input type="password" id="passBaru" placeholder="Password Baru" class="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-emerald-500">
-                    <input type="password" id="konfirmasiPass" placeholder="Konfirmasi Password" class="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-emerald-500">
-                    <div class="flex gap-2">
-                        <button type="button" onclick="tutupModalPassword()" class="flex-1 py-2 bg-slate-100 rounded-lg">Batal</button>
-                        <button type="submit" class="flex-1 py-2 bg-emerald-600 text-white rounded-lg">Simpan</button>
-                    </div>
-                </form>
+<div id="modalGantiPass" class="fixed inset-0 z-[100] hidden">
+    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="tutupModalPassword()"></div>
+    <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-sm p-6 bg-white rounded-2xl shadow-2xl">
+        <h3 class="text-lg font-bold mb-4">Ganti Password</h3>
+        
+        <!-- ✅ DITAMBAHKAN: id="formGantiPass" -->
+        <form id="formGantiPass" onsubmit="prosesGantiPass(event)" class="space-y-4">
+            
+            <input type="password" id="passBaru" placeholder="Password Baru" class="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-emerald-500">
+            <input type="password" id="konfirmasiPass" placeholder="Konfirmasi Password" class="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-emerald-500">
+            
+            <div class="flex gap-2">
+                <button type="button" onclick="tutupModalPassword()" class="flex-1 py-2 bg-slate-100 rounded-lg">Batal</button>
+                
+                <!-- ✅ DITAMBAHKAN: id="btnSimpanPass" -->
+                <button type="submit" id="btnSimpanPass" class="flex-1 py-2 bg-emerald-600 text-white rounded-lg">Simpan</button>
             </div>
-        </div>
-
+        </form>
     </div>
-
+</div>
+        
    <!-- MODAL PENGUMUMAN (POP UP)-->
     <div id="modalPengumuman" class="fixed inset-0 z-[99] bg-slate-900/60 backdrop-blur-sm justify-center items-center p-4" style="display: none;" onclick="tutupPengumuman(event)">
         <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden" onclick="event.stopPropagation()">
