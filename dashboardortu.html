@@ -369,8 +369,8 @@
         <h4 class="font-bold text-slate-700 text-[11px]">Mutabaah Yaumiyah</h4>
         <p class="text-[9px] text-slate-400 mt-1 leading-tight mb-2">Ibadah & Aktivitas Harian</p>
         
-        <!-- DIPERBAIKI: Menggunakan tag button dan memanggil bukaLaporanAkademik() -->
-        <button type="button" onclick="event.stopPropagation(); bukaLaporanAkademik();" class="inline-block text-[10px] text-emerald-600 font-bold hover:text-emerald-800 transition active:scale-90 text-left focus:outline-none">
+        <!-- FIX: Menggunakan button agar event click terpisah sempurna -->
+        <button type="button" onclick="event.stopPropagation(); bukaYaumiyah();" class="inline-block text-[10px] text-emerald-600 font-bold hover:text-emerald-800 transition active:scale-90 text-left focus:outline-none">
             Lihat Laporan <i class="fa-solid fa-arrow-right ml-1"></i>
         </button>
     </div>
