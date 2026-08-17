@@ -1547,16 +1547,16 @@ window.bukaYaumiyah = function() {
     const elKonten = document.getElementById('kontenPengumuman');
     
     if (!elModal || !elKonten) {
-        alert("Modal tidak ditemukan di HTML!");
+        console.error("Elemen modalPengumuman atau kontenPengumuman tidak ditemukan di DOM!");
+        alert("Elemen modal tidak ditemukan di HTML.");
         return;
     }
 
-    // PERBAIKAN UTAMA: Hapus class 'hidden' Tailwind agar properti display:flex berfungsi
-    elModal.classList.remove('hidden');
+    // Paksa bersihkan class yang menyembunyikan modal
+    elModal.classList.remove('hidden', 'opacity-0', 'pointer-events-none');
     elModal.style.display = 'flex';
     
     const dataString = localStorage.getItem('user_data'); 
-    
     if (dataString) {
         const dataSiswa = JSON.parse(dataString);
         const dataY = dataSiswa.yaumiyah;
@@ -1566,7 +1566,7 @@ window.bukaYaumiyah = function() {
                 <div class="text-center py-6">
                     <i class="fa-solid fa-clipboard-list text-slate-300 text-5xl mb-3"></i>
                     <h3 class="text-lg font-bold text-slate-800">Belum Ada Data</h3>
-                    <p class="text-sm text-slate-500 mt-2">Ananda belum mengisi form mutaba'ah yaumiyah sama sekali pada periode ini.</p>
+                    <p class="text-sm text-slate-500 mt-2">Ananda belum mengisi form mutaba'ah yaumiyah pada periode ini.</p>
                 </div>`;
             return;
         }
