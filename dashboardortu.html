@@ -561,7 +561,7 @@
             <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="tutupModalPassword()"></div>
             <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-sm p-6 bg-white rounded-2xl shadow-2xl">
                 <h3 class="text-lg font-bold mb-4">Ganti Password</h3>
-                <form onsubmit="prosesGantiPass(event)" class="space-y-4">
+                <form id="formGantiPass" onsubmit="prosesGantiPass(event)" class="space-y-4">
                     <input type="password" id="passBaru" placeholder="Password Baru" class="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-emerald-500">
                     <input type="password" id="konfirmasiPass" placeholder="Konfirmasi Password" class="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-emerald-500">
                     <div class="flex gap-2">
@@ -1406,9 +1406,12 @@ function tutupPengumuman(e) {
     }
 
     function tutupModalPassword() {
-        document.getElementById('modalGantiPass').classList.add('hidden');
-        document.getElementById('formGantiPass').reset();
+    document.getElementById('modalGantiPass').classList.add('hidden');
+    const form = document.getElementById('formGantiPass');
+    if (form) {
+        form.reset();
     }
+}
 
     function prosesGantiPass(e) {
   e.preventDefault();
