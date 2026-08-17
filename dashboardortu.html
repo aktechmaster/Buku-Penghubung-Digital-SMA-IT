@@ -370,7 +370,7 @@
         <p class="text-[9px] text-slate-400 mt-1 leading-tight mb-2">Ibadah & Aktivitas Harian</p>
         
         <!-- FIX: Menggunakan button agar event click terpisah sempurna -->
-        <button type="button" onclick="event.stopPropagation(); bukaYaumiyah();" class="inline-block text-[10px] text-emerald-600 font-bold hover:text-emerald-800 transition active:scale-90 text-left focus:outline-none">
+        <button type="button" onclick="event.stopPropagation(); ();" class="inline-block text-[10px] text-emerald-600 font-bold hover:text-emerald-800 transition active:scale-90 text-left focus:outline-none">
             Lihat Laporan <i class="fa-solid fa-arrow-right ml-1"></i>
         </button>
     </div>
@@ -1551,7 +1551,10 @@ window.bukaYaumiyah = function() {
         return;
     }
 
+    // PERBAIKAN UTAMA: Hapus class 'hidden' Tailwind agar properti display:flex berfungsi
+    elModal.classList.remove('hidden');
     elModal.style.display = 'flex';
+    
     const dataString = localStorage.getItem('user_data'); 
     
     if (dataString) {
@@ -1568,7 +1571,6 @@ window.bukaYaumiyah = function() {
             return;
         }
 
-        // PERBAIKAN: Tambahkan ?.length agar aman jika data kosong/undefined
         let htmlApresiasi = '';
         if (dataY.apresiasi?.length > 0) {
             htmlApresiasi = `<div class="bg-emerald-50 border border-emerald-200 rounded-lg p-3 mb-3">
@@ -1579,7 +1581,6 @@ window.bukaYaumiyah = function() {
             </div>`;
         }
 
-        // PERBAIKAN: Tambahkan ?.length
         let htmlPerhatian = '';
         if (dataY.perhatian?.length > 0) {
             htmlPerhatian = `<div class="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-3">
@@ -1590,7 +1591,6 @@ window.bukaYaumiyah = function() {
             </div>`;
         }
 
-        // Menyusun Kesimpulan Cerdas (Biru) dengan keamanan ?.length
         let teksKesimpulan = "";
         const jumlahPerhatian = dataY.perhatian?.length || 0;
         const jumlahApresiasi = dataY.apresiasi?.length || 0;
@@ -1608,7 +1608,6 @@ window.bukaYaumiyah = function() {
                 <p class="text-xs text-blue-800 font-medium leading-relaxed"><strong>Kesimpulan Wali Kelas:</strong><br>${teksKesimpulan}</p>
             </div>`;
 
-        // Gabungkan semua ke dalam konten modal
         elKonten.innerHTML = `
             <div class="mb-4 text-center border-b pb-3">
                 <h3 class="text-lg font-bold text-slate-800">Ringkasan Yaumiyah</h3>
@@ -1622,7 +1621,6 @@ window.bukaYaumiyah = function() {
         elKonten.innerHTML = `<p class="text-center text-red-500 py-6">Data tidak ditemukan. Silakan logout dan login kembali.</p>`;
     }
 };
-
         // ==========================================
     // TAMBAHAN BARU: CEK STATUS BACA SAAT HALAMAN DIMUAT
     // ==========================================
