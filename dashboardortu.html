@@ -561,12 +561,12 @@
             <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="tutupModalPassword()"></div>
             <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-sm p-6 bg-white rounded-2xl shadow-2xl">
                 <h3 class="text-lg font-bold mb-4">Ganti Password</h3>
-                <form id="formGantiPass" onsubmit="prosesGantiPass(event)" class="space-y-4">
+                <form onsubmit="prosesGantiPass(event)" class="space-y-4">
                     <input type="password" id="passBaru" placeholder="Password Baru" class="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-emerald-500">
                     <input type="password" id="konfirmasiPass" placeholder="Konfirmasi Password" class="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-emerald-500">
                     <div class="flex gap-2">
                         <button type="button" onclick="tutupModalPassword()" class="flex-1 py-2 bg-slate-100 rounded-lg">Batal</button>
-                        <button type="submit" id="btnSimpanPass" class="flex-1 py-2 bg-emerald-600 text-white rounded-lg">Simpan</button>
+                        <button type="submit" class="flex-1 py-2 bg-emerald-600 text-white rounded-lg">Simpan</button>
                     </div>
                 </form>
             </div>
@@ -1406,62 +1406,64 @@ function tutupPengumuman(e) {
     }
 
     function tutupModalPassword() {
-    document.getElementById('modalGantiPass').classList.add('hidden');
-    const form = document.getElementById('formGantiPass');
-    if (form) {
-        form.reset();
+        document.getElementById('modalGantiPass').classList.add('hidden');
+        document.getElementById('formGantiPass').reset();
     }
-}
 
     function prosesGantiPass(e) {
-  e.preventDefault();
-  const passBaru = document.getElementById('passBaru').value.trim();
-  const konfirmasi = document.getElementById('konfirmasiPass').value.trim();
-  
-  // Ambil tombol submit langsung dari form yang sedang di-submit
-  const btnSimpan = e.target.querySelector('button[type="submit"]');
+        e.preventDefault();
+        const passBaru = document.getElementById('passBaru').value;
+        const konfirmasi = document.getElementById('konfirmasiPass').value;
+        const btnSimpan = document.getElementById('btnSimpanPass');
 
-  if (!passBaru || !konfirmasi) { alert("Password kosong!"); return; }
-  if (passBaru !== konfirmasi) { alert("Password tidak sama!"); return; }
+        if (!passBaru || !konfirmasi) { alert("Password kosong!"); return; }
+        if (passBaru !== konfirmasi) { alert("Password tidak sama!"); return; }
 
-  const userNISN = localStorage.getItem('nisn');
-  if (!userNISN) { 
-    alert("Error: NISN/Username tidak ditemukan, silakan login ulang."); 
-    return; 
-  }
+        const savedData = localStorage.getItem('user_data');
+        let userNISN = "";
+        try {
+            if (savedData) userNISN = JSON.parse(savedData).nisn;
+        } catch(err) { console.error(err); }
+        
+        if (!userNISN) { alert("Error: NISN tidak ditemukan, silakan login ulang."); return; }
 
-  const textAsli = btnSimpan.innerText;
-  btnSimpan.innerText = "Menyimpan...";
-  btnSimpan.disabled = true;
+        const textAsli = btnSimpan.innerText;
+        btnSimpan.innerText = "Menyimpan...";
+        btnSimpan.disabled = true;
 
-  const formData = new FormData();
-  formData.append('action', 'gantiPass');
-  formData.append('nisn', userNISN);
-  formData.append('password', passBaru);
+        const formData = new FormData();
+        formData.append('action', 'gantiPass');
+        formData.append('nisn', userNISN);
+        formData.append('password', passBaru);
 
-  fetch(SCRIPT_URL, {
-    method: 'POST',
-    body: formData
-  })
-  .then(res => res.json())
-  .then(result => {
-    btnSimpan.innerText = textAsli;
-    btnSimpan.disabled = false;
-    
-    if (result.status === 'sukses') {
-      alert("Berhasil ganti password!");
-      tutupModalPassword();
-    } else {
-      alert("Gagal: " + (result.pesan || "NISN tidak ditemukan di database."));
+        fetch(SCRIPT_URL, {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.text()) // PERBAIKAN: Gunakan text() agar tidak crash jika GAS mengirim HTML Error
+        .then(text => {
+            btnSimpan.innerText = textAsli;
+            btnSimpan.disabled = false;
+            try {
+                const result = JSON.parse(text);
+                if (result.status === 'sukses') {
+                    alert("Berhasil ganti password!");
+                    tutupModalPassword();
+                } else {
+                    alert("Gagal: " + result.pesan);
+                }
+            } catch(err) {
+                alert("Terjadi masalah pada server. Pastikan URL Apps Script benar dan di-deploy dengan benar.");
+                console.error("Respons dari server bukan JSON:", text);
+            }
+        })
+        .catch(err => {
+            btnSimpan.innerText = textAsli;
+            btnSimpan.disabled = false;
+            alert("Gagal koneksi.");
+            console.error(err);
+        });
     }
-  })
-  .catch(err => {
-    btnSimpan.innerText = textAsli;
-    btnSimpan.disabled = false;
-    console.error(err);
-    alert("Gagal koneksi ke server!");
-  });
-}
 
     // --- PROSES UPLOAD FOTO (DIPERBAIKI FORMAT RESPONSE-NYA) ---
     function prosesUpload(input) {
