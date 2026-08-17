@@ -360,7 +360,7 @@
     </div>
                 
     <!-- KOTAK MUTABAAH YAUMIYAH -->
-<div onclick="window.location.href='https://aktechmaster.github.io/Form-Ibadah-Mingguan-Siswa-SMA/'" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 active:scale-95 transition cursor-pointer group hover:border-emerald-300 relative overflow-hidden flex flex-col justify-between">
+    <div onclick="window.location.href='https://aktechmaster.github.io/Form-Ibadah-Mingguan-Siswa-SMA/'" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 active:scale-95 transition cursor-pointer group hover:border-emerald-300 relative overflow-hidden flex flex-col justify-between">
     <div class="absolute top-0 right-0 w-12 h-12 bg-emerald-50 rounded-bl-3xl -mr-2 -mt-2 z-0 group-hover:scale-150 transition duration-500"></div>
     <div class="relative z-10">
         <div class="w-9 h-9 bg-emerald-100 text-emerald-600 rounded-lg flex items-center justify-center text-sm mb-3 group-hover:bg-emerald-600 group-hover:text-white transition">
@@ -369,10 +369,9 @@
         <h4 class="font-bold text-slate-700 text-[11px]">Mutabaah Yaumiyah</h4>
         <p class="text-[9px] text-slate-400 mt-1 leading-tight mb-2">Ibadah & Aktivitas Harian</p>
         
-        <!-- FIX: Menggunakan button agar event click terpisah sempurna -->
-        <button type="button" onclick="event.stopPropagation(); ();" class="inline-block text-[10px] text-emerald-600 font-bold hover:text-emerald-800 transition active:scale-90 text-left focus:outline-none">
+        <span onclick="event.stopPropagation(); bukaYaumiyah();" class="inline-block text-[10px] text-emerald-600 font-bold hover:text-emerald-800 transition active:scale-90">
             Lihat Laporan <i class="fa-solid fa-arrow-right ml-1"></i>
-        </button>
+        </span>
     </div>
 </div>
 
@@ -1547,16 +1546,13 @@ window.bukaYaumiyah = function() {
     const elKonten = document.getElementById('kontenPengumuman');
     
     if (!elModal || !elKonten) {
-        console.error("Elemen modalPengumuman atau kontenPengumuman tidak ditemukan di DOM!");
-        alert("Elemen modal tidak ditemukan di HTML.");
+        alert("Modal tidak ditemukan di HTML!");
         return;
     }
 
-    // Paksa bersihkan class yang menyembunyikan modal
-    elModal.classList.remove('hidden', 'opacity-0', 'pointer-events-none');
     elModal.style.display = 'flex';
-    
     const dataString = localStorage.getItem('user_data'); 
+    
     if (dataString) {
         const dataSiswa = JSON.parse(dataString);
         const dataY = dataSiswa.yaumiyah;
@@ -1566,11 +1562,12 @@ window.bukaYaumiyah = function() {
                 <div class="text-center py-6">
                     <i class="fa-solid fa-clipboard-list text-slate-300 text-5xl mb-3"></i>
                     <h3 class="text-lg font-bold text-slate-800">Belum Ada Data</h3>
-                    <p class="text-sm text-slate-500 mt-2">Ananda belum mengisi form mutaba'ah yaumiyah pada periode ini.</p>
+                    <p class="text-sm text-slate-500 mt-2">Ananda belum mengisi form mutaba'ah yaumiyah sama sekali pada periode ini.</p>
                 </div>`;
             return;
         }
 
+        // PERBAIKAN: Tambahkan ?.length agar aman jika data kosong/undefined
         let htmlApresiasi = '';
         if (dataY.apresiasi?.length > 0) {
             htmlApresiasi = `<div class="bg-emerald-50 border border-emerald-200 rounded-lg p-3 mb-3">
@@ -1581,6 +1578,7 @@ window.bukaYaumiyah = function() {
             </div>`;
         }
 
+        // PERBAIKAN: Tambahkan ?.length
         let htmlPerhatian = '';
         if (dataY.perhatian?.length > 0) {
             htmlPerhatian = `<div class="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-3">
@@ -1591,6 +1589,7 @@ window.bukaYaumiyah = function() {
             </div>`;
         }
 
+        // Menyusun Kesimpulan Cerdas (Biru) dengan keamanan ?.length
         let teksKesimpulan = "";
         const jumlahPerhatian = dataY.perhatian?.length || 0;
         const jumlahApresiasi = dataY.apresiasi?.length || 0;
@@ -1608,6 +1607,7 @@ window.bukaYaumiyah = function() {
                 <p class="text-xs text-blue-800 font-medium leading-relaxed"><strong>Kesimpulan Wali Kelas:</strong><br>${teksKesimpulan}</p>
             </div>`;
 
+        // Gabungkan semua ke dalam konten modal
         elKonten.innerHTML = `
             <div class="mb-4 text-center border-b pb-3">
                 <h3 class="text-lg font-bold text-slate-800">Ringkasan Yaumiyah</h3>
@@ -1621,6 +1621,7 @@ window.bukaYaumiyah = function() {
         elKonten.innerHTML = `<p class="text-center text-red-500 py-6">Data tidak ditemukan. Silakan logout dan login kembali.</p>`;
     }
 };
+
         // ==========================================
     // TAMBAHAN BARU: CEK STATUS BACA SAAT HALAMAN DIMUAT
     // ==========================================
@@ -1665,348 +1666,402 @@ window.bukaYaumiyah = function() {
     // cekNotifCatatanWali();
 
     // ==========================================
-// FUNGSI UPDATE SEMESTER (DIPERBAIKI)
-// ==========================================
-function updateSemester() {
-  const date = new Date();
-  const month = date.getMonth(); // 0 = Januari, 11 = Desember
-  const year = date.getFullYear();
-  let semester = "";
+    // FUNGSI UPDATE SEMESTER
+    // ==========================================
+        function updateSemester() {
+    const date = new Date();
+    const month = date.getMonth(); // 0 = Januari, 11 = Desember
+    const year = date.getFullYear();
+    let semester = "";
 
-  // Januari (0) - Juni (5) = Semester Genap Tahun Ajaran (Year-1)/Year
-  // Juli (6) - Desember (11) = Semester Ganjil Tahun Ajaran Year/(Year+1)
-  if (month >= 0 && month <= 5) {
-    semester = `Semester Genap ${year - 1}/${year}`;
-  } else {
-    semester = `Semester Ganjil ${year}/${year + 1}`;
+    // Logika: 
+    // Januari (0) sampai Juni (5) = Semester Genap
+    // Juli (6) sampai Desember (11) = Semester Ganjil
+    if (month >= 0 && month <= 5) {
+      semester = "Semester Genap " + year;
+    } else {
+      semester = "Semester Ganjil " + year;
+    }
+
+    // Masukkan teks ke dalam HTML
+    document.getElementById("semester-text").innerText = semester;
   }
 
-  const el = document.getElementById("semester-text");
-  if (el) el.innerText = semester;
-}
+  // Jalankan fungsi saat halaman dimuat
+  updateSemester();
 
-// Jalankan fungsi saat halaman dimuat
-updateSemester();
-
-// ==========================================
-// FUNGSI JADWAL PELAJARAN
-// ==========================================
-async function bukaModalJadwal() {
-  const elemenKelas = document.getElementById('kelas-siswa');
-  const kelasSiswaLogin = elemenKelas ? elemenKelas.innerText.toString().trim().toUpperCase() : "-";
-
-  const elInfo = document.getElementById('infoKelasSiswa');
-  if (elInfo) elInfo.innerText = "Kelas: " + kelasSiswaLogin;
-
-  const tbody = document.getElementById('tabelJadwalBody');
-  if (tbody) {
+        async function bukaModalJadwal() {
+    // 1. AMBIL KELAS LANGSUNG DARI TEKS UTAMA DASHBOARD
+    const elemenKelas = document.getElementById('kelas-siswa');
+    const kelasSiswaLogin = elemenKelas ? elemenKelas.innerText.toString().trim().toUpperCase() : "-";
+    
+    // Tampilkan nama kelas di bagian atas pop-up jadwal
+    document.getElementById('infoKelasSiswa').innerText = "Kelas: " + kelasSiswaLogin;
+    
+    const tbody = document.getElementById('tabelJadwalBody');
     tbody.innerHTML = `<tr><td colspan="2" class="p-4 text-center text-slate-400">Memuat jadwal secara real-time...</td></tr>`;
-  }
+    
+    document.getElementById('modalJadwal').classList.remove('hidden');
 
-  const modalJadwal = document.getElementById('modalJadwal');
-  if (modalJadwal) modalJadwal.classList.remove('hidden');
-
-  try {
-    if (typeof SCRIPT_URL === 'undefined') throw new Error("SCRIPT_URL belum didefinisikan");
-
-    const response = await fetch(SCRIPT_URL + "?action=getJadwal");
-    const dataJadwal = await response.json();
-
-    if (!dataJadwal || dataJadwal.length === 0) {
-      if (tbody) tbody.innerHTML = `<tr><td colspan="2" class="p-4 text-center text-red-500">Gagal mengambil data dari spreadsheet.</td></tr>`;
-      return;
-    }
-
-    const headerKelas = dataJadwal[0];
-    let indeksKolomKelas = -1;
-    for (let c = 0; c < headerKelas.length; c++) {
-      if (headerKelas[c] && headerKelas[c].toString().trim().toUpperCase() === kelasSiswaLogin) {
-        indeksKolomKelas = c;
-        break;
-      }
-    }
-
-    if (indeksKolomKelas === -1) {
-      if (tbody) tbody.innerHTML = `<tr><td colspan="2" class="p-4 text-center text-amber-500">Jadwal untuk kelas ${kelasSiswaLogin} belum terdaftar di spreadsheet.</td></tr>`;
-      return;
-    }
-
-    let jadwalPerHari = {};
-    let hariSaatIni = "";
-
-    for (let r = 1; r < dataJadwal.length; r++) {
-      let kolomHari = dataJadwal[r][0] ? dataJadwal[r][0].toString().trim() : "";
-      let kolomMapel = dataJadwal[r][indeksKolomKelas] ? dataJadwal[r][indeksKolomKelas].toString().trim() : "";
-
-      if (kolomHari !== "" && kolomHari !== "-") {
-        hariSaatIni = kolomHari.toUpperCase();
-      }
-
-      if (hariSaatIni && kolomMapel !== "" && kolomMapel !== "-") {
-        if (!jadwalPerHari[hariSaatIni]) {
-          jadwalPerHari[hariSaatIni] = [];
+    try {
+        // Ambil URL script yang ada di bagian atas kode utama Anda
+        // Kita tambahkan parameter ?action=getJadwal untuk mengambil data langsung
+        const response = await fetch(SCRIPT_URL + "?action=getJadwal");
+        const dataJadwal = await response.json();
+        
+        if (!dataJadwal || dataJadwal.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="2" class="p-4 text-center text-red-500">Gagal mengambil data dari spreadsheet.</td></tr>`;
+            return;
         }
-        jadwalPerHari[hariSaatIni].push(kolomMapel);
-      }
-    }
 
-    if (tbody) tbody.innerHTML = "";
+        // 2. Cari posisi kolom kelas siswa berdasarkan baris pertama (Header)
+        const headerKelas = dataJadwal[0];
+        let indeksKolomKelas = -1;
+        for (let c = 0; c < headerKelas.length; c++) {
+            if (headerKelas[c] && headerKelas[c].toString().trim().toUpperCase() === kelasSiswaLogin) {
+                indeksKolomKelas = c;
+                break;
+            }
+        }
 
-    const urutanHari = ["SENIN", "SELASA", "RABU", "KAMIS", "JUMAT", "SABTU"];
-    let adaDataJadwal = false;
+        if (indeksKolomKelas === -1) {
+            tbody.innerHTML = `<tr><td colspan="2" class="p-4 text-center text-amber-500">Jadwal untuk kelas ${kelasSiswaLogin} belum terdaftar di spreadsheet.</td></tr>`;
+            return;
+        }
 
-    urutanHari.forEach(hari => {
-      if (jadwalPerHari[hari] && jadwalPerHari[hari].length > 0) {
-        adaDataJadwal = true;
+        // 3. Olah data baris per baris
+        let jadwalPerHari = {};
+        let hariSaatIni = "";
 
-        let mapelHtml = '<ul class="list-disc pl-4 space-y-1 font-medium">';
-        jadwalPerHari[hari].forEach(mapel => {
-          mapelHtml += `<li>${mapel}</li>`;
+        for (let r = 1; r < dataJadwal.length; r++) {
+            let kolomHari  = dataJadwal[r][0] ? dataJadwal[r][0].toString().trim() : "";
+            let kolomMapel = dataJadwal[r][indeksKolomKelas] ? dataJadwal[r][indeksKolomKelas].toString().trim() : "";
+
+            if (kolomHari !== "" && kolomHari !== "-") {
+                hariSaatIni = kolomHari.toUpperCase();
+            }
+
+            if (hariSaatIni && kolomMapel !== "" && kolomMapel !== "-") {
+                if (!jadwalPerHari[hariSaatIni]) {
+                    jadwalPerHari[hariSaatIni] = [];
+                }
+                jadwalPerHari[hariSaatIni].push(kolomMapel);
+            }
+        }
+
+        // Bersihkan teks loading sebelum menampilkan jadwal asli
+        tbody.innerHTML = "";
+
+        const urutanHari = ["SENIN", "SELASA", "RABU", "KAMIS", "JUMAT", "SABTU"];
+        let adaDataJadwal = false;
+
+        urutanHari.forEach(hari => {
+            if (jadwalPerHari[hari] && jadwalPerHari[hari].length > 0) {
+                adaDataJadwal = true;
+                
+                let mapelHtml = '<ul class="list-disc pl-4 space-y-1 font-medium">';
+                jadwalPerHari[hari].forEach(mapel => {
+                    mapelHtml += `<li>${mapel}</li>`;
+                });
+                mapelHtml += '</ul>';
+
+                const rowHtml = `
+                    <tr class="hover:bg-slate-50 transition duration-150">
+                        <td class="p-3 font-bold text-slate-800 bg-slate-50/50 align-top border-r border-slate-100">${hari}</td>
+                        <td class="p-3 text-slate-600">${mapelHtml}</td>
+                    </tr>
+                `;
+                tbody.insertAdjacentHTML('beforeend', rowHtml);
+            }
         });
-        mapelHtml += '</ul>';
 
-        const rowHtml = `
-          <tr class="hover:bg-slate-50 transition duration-150">
-            <td class="p-3 font-bold text-slate-800 bg-slate-50/50 align-top border-r border-slate-100">${hari}</td>
-            <td class="p-3 text-slate-600">${mapelHtml}</td>
-          </tr>
-        `;
-        if (tbody) tbody.insertAdjacentHTML('beforeend', rowHtml);
-      }
-    });
+        if (!adaDataJadwal) {
+            tbody.innerHTML = `<tr><td colspan="2" class="p-4 text-center text-slate-400">Tidak ada jadwal belajar untuk kelas ini.</td></tr>`;
+        }
 
-    if (!adaDataJadwal && tbody) {
-      tbody.innerHTML = `<tr><td colspan="2" class="p-4 text-center text-slate-400">Tidak ada jadwal belajar untuk kelas ini.</td></tr>`;
+    } catch (error) {
+        console.error("Error load jadwal:", error);
+        tbody.innerHTML = `<tr><td colspan="2" class="p-4 text-center text-red-500">Terjadi gangguan koneksi jaringan.</td></tr>`;
     }
-
-  } catch (error) {
-    console.error("Error load jadwal:", error);
-    if (tbody) tbody.innerHTML = `<tr><td colspan="2" class="p-4 text-center text-red-500">Terjadi gangguan koneksi jaringan.</td></tr>`;
-  }
 }
 
 function tutupModalJadwal() {
-  const modal = document.getElementById('modalJadwal');
-  if (modal) modal.classList.add('hidden');
+    document.getElementById('modalJadwal').classList.add('hidden');
 }
-
 // ==========================================
-// FUNGSI LAPORAN AKADEMIK
+// FUNGSI BUKA LAPORAN AKADEMIK (VERSI AUTO-REFRESH)
 // ==========================================
 async function bukaLaporanAkademik() {
-  const modal = document.getElementById('modal-akademik');
-  const wrapper = document.getElementById('wrapper-modal-akademik');
-  const list = document.getElementById('list-mapel-akademik');
+    const modal = document.getElementById('modal-akademik');
+    const wrapper = document.getElementById('wrapper-modal-akademik');
+    const list = document.getElementById('list-mapel-akademik');
 
-  if (list) {
+    // 1. Tampilkan animasi loading agar ortu tahu sistem sedang bekerja
     list.innerHTML = `
-      <div class="flex flex-col items-center justify-center py-8">
-        <div class="flex space-x-1.5 mb-3">
-          <div class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-bounce" style="animation-delay: -0.3s"></div>
-          <div class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-bounce" style="animation-delay: -0.15s"></div>
-          <div class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-bounce"></div>
+        <div class="flex flex-col items-center justify-center py-8">
+            <div class="flex space-x-1.5 mb-3">
+                <div class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-bounce" style="animation-delay: -0.3s"></div>
+                <div class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-bounce" style="animation-delay: -0.15s"></div>
+                <div class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-bounce"></div>
+            </div>
+            <p class="text-xs text-slate-500 animate-pulse font-medium">Memuat nilai terbaru...</p>
         </div>
-        <p class="text-xs text-slate-500 animate-pulse font-medium">Memuat nilai terbaru...</p>
-      </div>
     `;
-  }
-
-  if (modal) modal.classList.remove('hidden');
-  setTimeout(() => {
-    if (wrapper) wrapper.classList.remove('translate-y-full');
-  }, 10);
-
-  try {
-    const savedNisn = localStorage.getItem('nisn');
-    const savedPass = localStorage.getItem('user_pass');
-
-    if (savedNisn && savedPass && typeof SCRIPT_URL !== 'undefined') {
-      const url = `${SCRIPT_URL}?username=${encodeURIComponent(savedNisn)}&password=${encodeURIComponent(savedPass)}`;
-
-      const response = await fetch(url, { cache: 'no-store' });
-      const freshData = await response.json();
-
-      if (freshData.result === 'success') {
-        localStorage.setItem('user_data', JSON.stringify(freshData));
-        if (typeof user !== 'undefined') window.user = freshData;
-      }
-    }
-  } catch (error) {
-    console.error("Gagal refresh data di latar belakang:", error);
-  }
-
-  const dataAkademik = (typeof user !== 'undefined' && user.akademik) ? user.akademik : [];
-
-  if (!list) return;
-
-  if (!dataAkademik || dataAkademik.length === 0) {
-    list.innerHTML = "<p class='text-center text-xs text-slate-400 py-4'>Data belum tersedia</p>";
-    return;
-  }
-
-  list.innerHTML = "";
-
-  dataAkademik.forEach(item => {
-    let colorClass = "bg-slate-100 text-slate-400 border-slate-200";
-    if (item.warna === "emerald") colorClass = "bg-emerald-50 text-emerald-600 border-emerald-100";
-    if (item.warna === "green") colorClass = "bg-green-50 text-green-600 border-green-100";
-    if (item.warna === "blue") colorClass = "bg-blue-50 text-blue-600 border-blue-100";
-    if (item.warna === "orange") colorClass = "bg-orange-50 text-orange-600 border-orange-100";
-    if (item.warna === "red") colorClass = "bg-red-50 text-red-600 border-red-100 animate-pulse";
-
-    const html = `
-      <div class="flex justify-between items-center p-3.5 bg-slate-50 rounded-2xl border border-slate-100">
-        <span class="font-bold text-slate-700 text-[11px]">${item.mapel}</span>
-        <span class="px-3 py-1 text-[9px] font-extrabold rounded-lg border shadow-sm ${colorClass}">
-          ${item.kriteria}
-        </span>
-      </div>
-    `;
-    list.insertAdjacentHTML('beforeend', html);
-  });
-}
-
-function tutupLaporanAkademik() {
-  const modal = document.getElementById('modal-akademik');
-  const wrapper = document.getElementById('wrapper-modal-akademik');
-
-  if (wrapper) wrapper.classList.add('translate-y-full');
-
-  setTimeout(() => {
-    if (modal) modal.classList.add('hidden');
-  }, 300);
-}
-
-// ==========================================
-// AUTO-REFRESH DASHBOARD LATAR BELAKANG
-// ==========================================
-async function segarkanDashboardDiamDiam() {
-  const savedNisn = localStorage.getItem('nisn');
-  const savedPass = localStorage.getItem('user_pass');
-
-  if (savedNisn && savedPass && typeof SCRIPT_URL !== 'undefined') {
-    try {
-      const url = `${SCRIPT_URL}?username=${encodeURIComponent(savedNisn)}&password=${encodeURIComponent(savedPass)}`;
-      const response = await fetch(url, { cache: 'no-store' });
-      const freshData = await response.json();
-
-      if (freshData.result === 'success') {
-        localStorage.setItem('user_data', JSON.stringify(freshData));
-        if (typeof user !== 'undefined') window.user = freshData;
-
-        if (freshData.absensi) {
-          const persenTeks = freshData.absensi.persen || "0%";
-          if (typeof setText === 'function') setText('absen-persen', persenTeks);
-
-          let persenAngka = parseFloat(persenTeks.replace(',', '.').replace('%', '')) || 0;
-          let derajat = (persenAngka / 100) * 360;
-          const ring = document.getElementById('absen-ring');
-          if (ring) ring.style.setProperty('--percent', derajat + 'deg');
-
-          if (typeof setText === 'function') {
-            setText('val-h', (freshData.absensi.h || 0) + " H");
-            setText('val-s', (freshData.absensi.s || 0) + " S");
-            setText('val-i', (freshData.absensi.i || 0) + " I");
-            setText('val-a', (freshData.absensi.a || 0) + " A");
-          }
-
-          if (typeof updateStatusHarian === 'function') {
-            updateStatusHarian(freshData.absensi.statusToday);
-          }
-        } else if (typeof updateStatusHarian === 'function') {
-          updateStatusHarian("");
-        }
-      }
-    } catch (error) {
-      console.log("Sistem gagal menyegarkan data di latar belakang. Tetap pakai data lama.");
-    }
-  }
-}
-
-window.addEventListener('load', segarkanDashboardDiamDiam);
-
-document.addEventListener("visibilitychange", function() {
-  if (document.visibilityState === 'visible') {
-    setTimeout(segarkanDashboardDiamDiam, 500);
-  }
-});
-
-// ==========================================
-// FUNGSI MODAL DATA GURU (DIPERBAIKI)
-// ==========================================
-function renderTabelGuru(daftar) {
-  const elTabel = document.getElementById('isi-tabel-guru');
-  if (!elTabel) return;
-
-  if (!daftar || daftar.length === 0) {
-    elTabel.innerHTML = `<tr><td colspan="6" class="text-center text-slate-400 py-8">Belum ada data guru</td></tr>`;
-    return;
-  }
-
-  let html = '';
-  daftar.forEach(guru => {
-    html += `
-      <tr class="border-b border-slate-100 hover:bg-emerald-50 transition-colors">
-        <td class="px-3 py-3 text-left font-medium text-slate-800">${guru['Nama Lengkap'] || '-'}</td>
-        <td class="px-3 py-3 text-center text-slate-600">${guru['NIP/NIY'] || '-'}</td>
-        <td class="px-3 py-3 text-left text-slate-600">${guru['Jabatan Utama'] || '-'}</td>
-        <td class="px-3 py-3 text-left text-slate-600">${guru['Tugas Tambahan'] || '-'}</td>
-        <td class="px-3 py-3 text-left text-slate-600">${guru['Alamat Domisili'] || '-'}</td>
-        <td class="px-3 py-3 text-left text-slate-600">${guru['No HP'] || '-'}</td> 
-      </tr>`;
-  });
-
-  elTabel.innerHTML = html;
-}
-
-function bukaModalGuru() {
-  const modal = document.getElementById('modalGuru');
-  if (modal) {
-    modal.style.display = 'flex';
+    
     modal.classList.remove('hidden');
-  }
+    setTimeout(() => {
+        if (wrapper) wrapper.classList.remove('translate-y-full');
+    }, 10);
 
-  const tbody = document.getElementById('isi-tabel-guru');
-  if (tbody) {
-    tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-emerald-600 font-medium animate-pulse">⏳ Memperbarui data dari Google Sheets...</td></tr>`;
-  }
+    try {
+        // 2. Ambil "kunci" untuk menembak API dari brankas
+        const savedNisn = localStorage.getItem('nisn');
+        const savedPass = localStorage.getItem('user_pass');
 
-  if (typeof SCRIPT_URL === 'undefined') {
-    if (tbody) tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-red-500 font-medium">❌ URL Google Script (SCRIPT_URL) belum dikonfigurasi.</td></tr>`;
-    return;
-  }
+        // Jika kunci lengkap, diam-diam kita tembak GAS di latar belakang
+        if (savedNisn && savedPass && typeof SCRIPT_URL !== 'undefined') {
+            const url = `${SCRIPT_URL}?username=${encodeURIComponent(savedNisn)}&password=${encodeURIComponent(savedPass)}`;
+            
+            const response = await fetch(url, { cache: 'no-store' });
+            const freshData = await response.json();
 
-  const timestamp = new Date().getTime();
-  const urlGAS = `${SCRIPT_URL}?action=getDaftarGuru&nocache=${timestamp}`;
+            if (freshData.result === 'success') {
+                // Update brankas lokal dengan data yang baru
+                localStorage.setItem('user_data', JSON.stringify(freshData));
+                
+                // Update variabel global 'user' agar sinkron
+                user = freshData; 
+            }
+        }
+    } catch (error) {
+        console.error("Gagal refresh data di latar belakang:", error);
+        // Jika gagal (misal sinyal jelek), kita lanjut pakai data lama yang sudah ada di memori
+    }
 
-  fetch(urlGAS)
-    .then(response => {
-      if (!response.ok) throw new Error("Jaringan bermasalah");
-      return response.json();
-    })
-    .then(dataTerbaru => {
-      window.semuaDataGuru = dataTerbaru;
-      renderTabelGuru(dataTerbaru);
-    })
-    .catch(error => {
-      console.error("❌ Gagal memuat data:", error);
-      if (tbody) {
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-red-500 font-medium">❌ Gagal memuat data dari server. Silakan coba lagi.</td></tr>`;
-      }
+    // 3. Render ulang list menggunakan data (yang sudah pasti terbaru jika proses di atas berhasil)
+    const dataAkademik = user.akademik; 
+   
+    if (!dataAkademik || dataAkademik.length === 0) {
+        list.innerHTML = "<p class='text-center text-xs text-slate-400 py-4'>Data belum tersedia</p>";
+        return;
+    }
+
+    list.innerHTML = ""; // Bersihkan teks loading
+    
+    // Logika pewarnaan kamu tidak saya ubah sama sekali, tetap aman
+    dataAkademik.forEach(item => {
+        let colorClass = "bg-slate-100 text-slate-400 border-slate-200";
+        if (item.warna === "emerald") colorClass = "bg-emerald-50 text-emerald-600 border-emerald-100";
+        if (item.warna === "green") colorClass = "bg-green-50 text-green-600 border-green-100";
+        if (item.warna === "blue") colorClass = "bg-blue-50 text-blue-600 border-blue-100";
+        if (item.warna === "orange") colorClass = "bg-orange-50 text-orange-600 border-orange-100";
+        if (item.warna === "red") colorClass = "bg-red-50 text-red-600 border-red-100 animate-pulse";
+
+        const html = `
+            <div class="flex justify-between items-center p-3.5 bg-slate-50 rounded-2xl border border-slate-100">
+                <span class="font-bold text-slate-700 text-[11px]">${item.mapel}</span>
+                <span class="px-3 py-1 text-[9px] font-extrabold rounded-lg border shadow-sm ${colorClass}">
+                    ${item.kriteria}
+                </span>
+            </div>
+        `;
+        list.insertAdjacentHTML('beforeend', html);
     });
 }
 
+// ==========================================
+// FUNGSI TUTUP LAPORAN AKADEMIK (IKUT DISERTAKAN)
+// ==========================================
+function tutupLaporanAkademik() {
+    const modal = document.getElementById('modal-akademik');
+    const wrapper = document.getElementById('wrapper-modal-akademik');
+    
+    // Beri animasi turun/keluar sebelum ditutup
+    if (wrapper) wrapper.classList.add('translate-y-full');
+    
+    setTimeout(() => {
+        if (modal) modal.classList.add('hidden');
+    }, 300); // Menunggu 0.3 detik sampai animasi selesai
+}
+
+        //===========================================
+        // --- SISTEM AUTO-REFRESH LATAR BELAKANG ---
+        //===========================================
+async function segarkanDashboardDiamDiam() {
+    const savedNisn = localStorage.getItem('nisn');
+    const savedPass = localStorage.getItem('user_pass');
+
+    // Pastikan user punya kunci
+    if (savedNisn && savedPass && typeof SCRIPT_URL !== 'undefined') {
+        try {
+            // Tembak GAS di latar belakang
+            const url = `${SCRIPT_URL}?username=${encodeURIComponent(savedNisn)}&password=${encodeURIComponent(savedPass)}`;
+            const response = await fetch(url, { cache: 'no-store' });
+            const freshData = await response.json();
+
+            if (freshData.result === 'success') {
+                // 1. Simpan data baru ke brankas
+                localStorage.setItem('user_data', JSON.stringify(freshData));
+                user = freshData; 
+
+                // 2. RENDER ULANG ABSENSI SAJA TANPA REFRESH HALAMAN
+                if (user.absensi) {
+                    const persenTeks = user.absensi.persen || "0%";
+                    setText('absen-persen', persenTeks);
+
+                    let persenAngka = parseFloat(persenTeks.replace(',', '.').replace('%', '')) || 0;
+                    let derajat = (persenAngka / 100) * 360;
+                    const ring = document.getElementById('absen-ring');
+                    if(ring) ring.style.setProperty('--percent', derajat + 'deg');
+
+                    setText('val-h', (user.absensi.h || 0) + " H");
+                    setText('val-s', (user.absensi.s || 0) + " S");
+                    setText('val-i', (user.absensi.i || 0) + " I");
+                    setText('val-a', (user.absensi.a || 0) + " A");
+
+                    updateStatusHarian(user.absensi.statusToday);
+                } else {
+                    updateStatusHarian("");
+                }
+            }
+        } catch (error) {
+            console.log("Sistem gagal menyegarkan data di latar belakang. Tetap pakai data lama.");
+        }
+    }
+}
+
+// PEMICU 1: Saat halaman di-refresh manual (Tarik ke bawah / F5)
+window.addEventListener('load', segarkanDashboardDiamDiam);
+
+// PEMICU 2: Saat Ortu pindah tab / buka layar HP kembali (Visibility API)
+document.addEventListener("visibilitychange", function() {
+    if (document.visibilityState === 'visible') {
+        // Beri jeda 500ms agar browser stabil dulu setelah "bangun"
+        setTimeout(segarkanDashboardDiamDiam, 500);
+    }
+});
+
+        // Fungsi untuk merender/memasukkan data guru ke dalam tabel HTML
+function renderTabelGuru(dataGuru) {
+    const tbody = document.getElementById('isi-tabel-guru');
+    
+    if (!dataGuru || dataGuru.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-slate-400">📭 Data guru belum tersedia atau gagal dimuat.</td></tr>`;
+        return;
+    }
+    
+    let htmlContent = '';
+    dataGuru.forEach(guru => {
+        htmlContent += `
+            <tr class="border-b border-slate-100 hover:bg-slate-50 transition">
+                <td class="px-3 py-3 text-left font-medium text-slate-800">${guru["Nama Lengkap"]}</td>
+                <td class="px-3 py-3 text-center text-slate-600">${guru["NIP/NIY"]}</td>
+                <td class="px-3 py-3 text-left text-slate-600">${guru["Jabatan Utama"]}</td>
+                <td class="px-3 py-3 text-left text-slate-600">${guru["Tugas Tambahan"]}</td>
+                <td class="px-3 py-3 text-left text-slate-600">${guru["Alamat Domisili"]}</td>
+                <td class="px-3 py-3 text-left text-slate-600">${guru["No HP"]}</td>
+            </tr>
+        `;
+    });
+    tbody.innerHTML = htmlContent;
+}
+
+        // ==========================================
+// PENGGANTI BAGIAN 4: Mengambil Data Baru
+// ==========================================
+function bukaModalGuru() {
+    console.log("Mencoba mengambil data guru terbaru..."); 
+    
+    // 1. Munculkan Modal
+    const modal = document.getElementById('modalGuru');
+    if (modal) {
+        modal.style.display = 'flex'; 
+        modal.classList.remove('hidden'); 
+    }
+    
+    // 2. Munculkan teks loading
+    const tbody = document.getElementById('isi-tabel-guru');
+    if (tbody) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-emerald-600 font-medium animate-pulse">⏳ Memperbarui data dari Google Sheets...</td></tr>`;
+    }
+    
+    // 3. URL yang sudah diperbaiki (TIDAK DOUBLE)
+    const urlApp = "https://script.google.com/macros/s/AKfycbxiDToc3gBf0sWDvPe81G5rMpY_mixbY5JhcbLUvmjZgzv1qTSx7BWtOvfXdHMQg7nfUw/exec"; 
+    const timestamp = new Date().getTime();
+    const urlGAS = `${urlApp}?action=getDaftarGuru&nocache=${timestamp}`;
+    
+    // 4. Proses Fetch (Ambil Data)
+    fetch(urlGAS)
+        .then(response => {
+            if (!response.ok) throw new Error("Jaringan bermasalah");
+            return response.json();
+        })
+        .then(dataTerbaru => {
+            console.log("✅ Data guru terbaru berhasil diterima:", dataTerbaru);
+            
+            // Simpan data terbaru jika diperlukan di fitur lain
+            window.semuaDataGuru = dataTerbaru;
+            
+            // Panggil fungsi pencetak tabel di bawah
+            renderTabelGuru(dataTerbaru);
+        })
+        .catch(error => {
+            console.error("❌ Gagal memuat data:", error);
+            if (tbody) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-red-500 font-medium">❌ Gagal memuat data dari server. Silakan coba lagi.</td></tr>`;
+            }
+        });
+}
+
+// ==========================================
+// PENGGANTI BAGIAN 5: Mencetak Data ke Tabel
+// ==========================================
+function renderTabelGuru(daftar) {
+    const elTabel = document.getElementById('isi-tabel-guru');
+    if (!elTabel) return; 
+
+    // Jika data kosong
+    if (!daftar || daftar.length === 0) {
+        elTabel.innerHTML = `<tr><td colspan="6" class="text-center text-slate-400 py-8">Belum ada data guru</td></tr>`;
+        return;
+    } 
+    
+    // Jika data ada, susun baris HTML
+    let html = '';
+    daftar.forEach(guru => {
+        html += `
+        <tr class="border-b border-slate-100 hover:bg-emerald-50 transition-colors">
+            <td class="px-3 py-3 text-left">${guru['Nama Lengkap'] || '-'}</td>
+            <td class="px-3 py-3 text-center">${guru['NIP/NIY'] || '-'}</td>
+            <td class="px-3 py-3 text-left">${guru['Jabatan Utama'] || '-'}</td>
+            <td class="px-3 py-3 text-left">${guru['Tugas Tambahan'] || '-'}</td>
+            <td class="px-3 py-3 text-left">${guru['Alamat Domisili'] || '-'}</td>
+            <td class="px-3 py-3 text-left">${guru['No HP'] || '-'}</td> 
+        </tr>`;
+    });
+    
+    // Suntikkan ke dalam tabel
+    elTabel.innerHTML = html;
+}
+
+// ==========================================
+// FUNGSI UNTUK MENUTUP MODAL GURU
+// ==========================================
 function tutupModalGuru(event) {
-  const modal = document.getElementById('modalGuru');
-  if (!modal) return;
-
-  // Jika dipanggil dari event listener click (latar belakang)
-  if (event && event.target && event.target !== modal && !event.target.classList.contains('btn-close-guru')) {
-    return;
-  }
-
-  modal.style.display = 'none';
-  modal.classList.add('hidden');
+    // 1. Cek jika diklik dari area luar (overlay gelap)
+    if (event) {
+        // Pastikan yang diklik benar-benar id 'modalGuru' (area gelap), bukan isi putihnya
+        if (event.target.id !== 'modalGuru') {
+            return; // Hentikan fungsi agar modal tidak tertutup saat tabel diklik
+        }
+    }
+    
+    // 2. Proses menutup modal
+    const modal = document.getElementById('modalGuru');
+    if (modal) {
+        modal.style.display = 'none';      // Sembunyikan modal
+        modal.classList.add('hidden');     // Tambahkan class hidden kembali (jika pakai Tailwind)
+    }
 }
         
 </script>
