@@ -1127,16 +1127,13 @@ window.tutupModalT2Q = function(e) {
     }
 
     //=================================================
-    // --- MODAL BINA PRIBADI DENGAN AUTO-REFRESH ---
-    //=================================================
-    
+// --- MODAL BINA PRIBADI DENGAN AUTO-REFRESH ---
+//=================================================
+
 window.bukaModalBina = async function() {
     const modal = document.getElementById('modalBina');
+    if (modal) modal.style.display = 'flex';
 
-    // 1. Munculkan modal terlebih dahulu
-    if(modal) modal.style.display = 'flex';
-
-    // 1.1. Siapkan kode HTML untuk animasi mini yang pas untuk kotak nilai
     const miniLoadingHTML = `
         <div class="flex items-center justify-start space-x-1 py-0.5">
             <span class="text-xs text-slate-400 font-medium animate-pulse mr-1">Memuat</span>
@@ -1146,413 +1143,386 @@ window.bukaModalBina = async function() {
         </div>
     `;
 
-    // 1.2. Suntikkan animasi ke masing-masing elemen nilai (menggantikan fungsi setText)
-    const elDisiplin = document.getElementById('val-disiplin');
-    const elIbadah = document.getElementById('val-ibadah');
-    const elSosial = document.getElementById('val-sosial');
-
-    if (elDisiplin) elDisiplin.innerHTML = miniLoadingHTML;
-    if (elIbadah) elIbadah.innerHTML = miniLoadingHTML;
-    if (elSosial) elSosial.innerHTML = miniLoadingHTML;
+    ['val-disiplin', 'val-ibadah', 'val-sosial'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = miniLoadingHTML;
+    });
 
     try {
-        // 2. Ambil "kunci" dari brankas lokal
         const savedNisn = localStorage.getItem('nisn');
         const savedPass = localStorage.getItem('user_pass');
 
-        // Tembak GAS di latar belakang jika kunci tersedia
         if (savedNisn && savedPass && typeof SCRIPT_URL !== 'undefined') {
             const url = `${SCRIPT_URL}?username=${encodeURIComponent(savedNisn)}&password=${encodeURIComponent(savedPass)}`;
             const response = await fetch(url, { cache: 'no-store' });
             const freshData = await response.json();
 
             if (freshData.result === 'success') {
-                // Update brankas & variabel global agar sinkron
                 localStorage.setItem('user_data', JSON.stringify(freshData));
-                user = freshData;
+                window.user = freshData;
                 window.dataBina = freshData.bina_pribadi ? freshData.bina_pribadi.detail : null;
                 window.dataUserAktif = freshData;
                 window.pesanWali = freshData.bina_pribadi ? freshData.bina_pribadi.catatan_wali : "-";
                 window.riwayatPesanWali = freshData.catatan_wali_history || [];
 
-                // --- SINKRONISASI TAMPILAN DASHBOARD LUAR (RATING BINTANG) ---
-                // Agar jumlah bintang di luar ikut berubah saat data di-update
-                if (user.bina_pribadi) {
-                    const rating = user.bina_pribadi.avg_bintang || 0;
+                if (window.user.bina_pribadi) {
+                    const rating = window.user.bina_pribadi.avg_bintang || 0;
                     let htmlBintang = '';
                     for (let i = 1; i <= 4; i++) {
-                        if (i <= rating) {
-                            htmlBintang += `<i class="fa-solid fa-star text-yellow-500"></i>`;
-                        } else {
-                            htmlBintang += `<i class="fa-regular fa-star text-slate-300"></i>`;
-                        }
+                        htmlBintang += i <= rating 
+                            ? `<i class="fa-solid fa-star text-yellow-500"></i>` 
+                            : `<i class="fa-regular fa-star text-slate-300"></i>`;
                     }
                     const elBintang = document.getElementById('container-bintang');
-                    if(elBintang) elBintang.innerHTML = htmlBintang;
+                    if (elBintang) elBintang.innerHTML = htmlBintang;
                 }
             }
         }
     } catch (error) {
-        console.error("Gagal refresh data Bina Pribadi di latar belakang:", error);
+        console.error("Gagal refresh data Bina Pribadi:", error);
     }
 
-    // 3. Render rincian nilai di dalam Modal menggunakan data terbaru
-    var d = window.dataBina;
-    if (!d) {
-        if (user && user.bina_pribadi) d = user.bina_pribadi.detail;
-    }
+    let d = window.dataBina || (window.user && window.user.bina_pribadi ? window.user.bina_pribadi.detail : null);
+
+    const safeSetText = (id, val) => {
+        if (typeof setText === 'function') setText(id, val);
+        else {
+            const el = document.getElementById(id);
+            if (el) el.innerText = val;
+        }
+    };
 
     if (!d) {
-        setText('val-disiplin', "-");
-        setText('val-ibadah', "-");
-        setText('val-sosial', "-");
+        safeSetText('val-disiplin', "-");
+        safeSetText('val-ibadah', "-");
+        safeSetText('val-sosial', "-");
         alert("Data Bina Pribadi belum tersedia.");
         return;
     }
 
-    setText('val-disiplin', (d.d || 0) + " / 4");
-    setText('val-ibadah', (d.i || 0) + " / 4");
-    setText('val-sosial', (d.s || 0) + " / 4");
-}
+    safeSetText('val-disiplin', `${d.d || 0} / 4`);
+    safeSetText('val-ibadah', `${d.i || 0} / 4`);
+    safeSetText('val-sosial', `${d.s || 0} / 4`);
+};
 
 window.tutupModalBina = function(e) {
     const el = document.getElementById('modalBina');
     if (el && (e === null || e.target.id === 'modalBina')) {
         el.style.display = 'none';
     }
-}
-    //=============================================
+};
 
-    // PERBAIKAN 1: Tambahkan window. agar fungsi bisa dipanggil dari HTML onclick
-    window.bukaCatatanWali = function() {
-        // Ambil data riwayat (jika sudah pakai array baru) ATAU pesan tunggal (jika masih pakai string lama)
-        const riwayat = window.riwayatPesanWali || [];
-        const pesanTunggal = window.pesanWali || ""; 
-        const modal = document.getElementById('modalCatatan');
-        
-        // Cek apakah modal ada di HTML
-        if (!modal) {
-            console.error("Elemen dengan ID 'modalCatatan' tidak ditemukan di HTML!");
-            return;
-        }
+//=============================================
+// --- CATATAN WALI KELAS & INFO APLIKASI ---
+//=============================================
 
-        const elIconBg = document.getElementById('mc-icon-bg');
-        const elIcon = document.getElementById('mc-icon');
-        const elTitle = document.getElementById('mc-title');
-        const elBodyBg = document.getElementById('mc-body-bg');
-        const elText = document.getElementById('isi-pesan-wali');
-        const elNotif = document.getElementById('notif-dot');
-        const elLabel = document.getElementById('label-catatan');
+window.bukaCatatanWali = function() {
+    const riwayat = window.riwayatPesanWali || [];
+    const pesanTunggal = window.pesanWali || ""; 
+    const modal = document.getElementById('modalCatatan');
 
-        // INSTAN: Matikan titik merah dan ubah teks jadi "Sudah dibaca" saat diklik
-        if(elNotif) elNotif.classList.add('hidden');
-        if(elLabel) {
-            elLabel.innerText = "Sudah dibaca";
-            elLabel.classList.remove('text-orange-600', 'font-bold');
-            elLabel.classList.add('text-slate-400');
-        }
+    if (!modal) return console.error("Elemen 'modalCatatan' tidak ditemukan!");
 
-        // PERBAIKAN 2: Render isi modal secara "Anti-Gagal" (Support Array & String)
-        const isRiwayatAda = riwayat.length > 0;
-        const isPesanTunggalAda = pesanTunggal && pesanTunggal !== "-" && pesanTunggal.trim() !== "";
+    const elIconBg = document.getElementById('mc-icon-bg');
+    const elIcon = document.getElementById('mc-icon');
+    const elTitle = document.getElementById('mc-title');
+    const elBodyBg = document.getElementById('mc-body-bg');
+    const elText = document.getElementById('isi-pesan-wali');
+    const elNotif = document.getElementById('notif-dot');
+    const elLabel = document.getElementById('label-catatan');
 
-        // Ambil NISN untuk keperluan memori HP
-        const nisnUser = (window.dataUserAktif && window.dataUserAktif.nisn) ? window.dataUserAktif.nisn : 'siswa';
-
-        if (!isRiwayatAda && !isPesanTunggalAda) {
-            // KONDISI 1: TIDAK ADA PESAN SAMA SEKALI
-            if(elIconBg) elIconBg.className = "w-14 h-14 bg-slate-100 text-slate-500 rounded-full mx-auto flex items-center justify-center text-2xl mb-2 shadow-sm";
-            if(elIcon) elIcon.className = "fa-solid fa-clipboard-check";
-            if(elTitle) elTitle.innerText = "Belum Ada Catatan";
-            if(elBodyBg) elBodyBg.className = "bg-slate-50 p-5 rounded-xl border border-slate-100 text-center relative mt-2";
-            if(elText) {
-                elText.innerText = "Saat ini belum ada catatan baru dari Wali Kelas untuk Ananda. Tetap semangat!";
-                elText.classList.remove('italic');
-            }
-
-        } else if (isRiwayatAda) {
-            // KONDISI 2: DATA SUDAH FORMAT ARRAY (RIWAYAT)
-            if(elIconBg) elIconBg.className = "w-14 h-14 bg-orange-100 text-orange-500 rounded-full mx-auto flex items-center justify-center text-2xl mb-2 shadow-sm animate-bounce";
-            if(elIcon) elIcon.className = "fa-solid fa-comment-dots";
-            if(elTitle) elTitle.innerText = "Riwayat Pesan Wali Kelas";
-            if(elBodyBg) elBodyBg.className = "bg-white p-2 rounded-xl border border-orange-100 text-center relative mt-2 max-h-60 overflow-y-auto"; 
-            
-            if(elText) {
-                let htmlList = `<div class="text-left">`;
-                riwayat.forEach((pesan, index) => {
-                    let bgClass = index === 0 ? "bg-orange-50 border-orange-200" : "bg-slate-50 border-slate-200";
-                    htmlList += `
-                    <div class="p-3 rounded-lg border ${bgClass} mb-2 shadow-sm">
-                        <div class="flex justify-between items-center mb-1">
-                            <span class="text-[10px] font-bold text-orange-600"><i class="fa-regular fa-calendar mr-1"></i> ${pesan.tanggal}</span>
-                            <span class="text-[9px] text-slate-400">${pesan.waktu}</span>
-                        </div>
-                        <p class="text-sm text-slate-700 italic">"${pesan.isi}"</p>
-                    </div>`;
-                });
-                htmlList += `</div>`;
-                elText.innerHTML = htmlList; 
-            }
-
-            // Simpan ID pesan ke memori HP agar titik merah hilang permanen
-            localStorage.setItem('catatan_terbaca_' + nisnUser, riwayat[0].id);
-
-        } else if (isPesanTunggalAda) {
-            // KONDISI 3: DATA MASIH FORMAT LAMA (TEKS STRING BIASA)
-            if(elIconBg) elIconBg.className = "w-14 h-14 bg-orange-100 text-orange-500 rounded-full mx-auto flex items-center justify-center text-2xl mb-2 shadow-sm animate-bounce";
-            if(elIcon) elIcon.className = "fa-solid fa-comment-dots";
-            if(elTitle) elTitle.innerText = "Pesan Wali Kelas";
-            if(elBodyBg) elBodyBg.className = "bg-orange-50 p-5 rounded-xl border border-orange-100 text-center relative mt-2";
-            if(elText) {
-                elText.innerText = pesanTunggal;
-                elText.classList.add('italic');
-            }
-
-            // Buat ID bayangan dari teks pesannya agar titik merah hilang permanen
-            const idBayangan = btoa(encodeURIComponent(pesanTunggal)).substring(0, 15); 
-            localStorage.setItem('catatan_terbaca_' + nisnUser, idBayangan);
-        }
-        
-        // PERBAIKAN 3: Pastikan class 'hidden' dihapus jika menggunakan Tailwind CSS
-        modal.classList.remove('hidden'); 
-        modal.style.display = 'flex';
+    if (elNotif) elNotif.classList.add('hidden');
+    if (elLabel) {
+        elLabel.innerText = "Sudah dibaca";
+        elLabel.classList.remove('text-orange-600', 'font-bold');
+        elLabel.classList.add('text-slate-400');
     }
 
-    // PERBAIKAN 4: Tambahkan window. pada fungsi tutup
-    window.tutupCatatanWali = function(e) {
-        const modal = document.getElementById('modalCatatan');
-        if (modal && (e === null || e.target.id === 'modalCatatan')) {
-            modal.style.display = 'none';
-            modal.classList.add('hidden');
+    const isRiwayatAda = riwayat.length > 0;
+    const isPesanTunggalAda = pesanTunggal && pesanTunggal !== "-" && pesanTunggal.trim() !== "";
+    const nisnUser = (window.dataUserAktif && window.dataUserAktif.nisn) ? window.dataUserAktif.nisn : 'siswa';
+
+    const escapeHTML = str => String(str).replace(/[&<>"']/g, match => 
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[match]));
+
+    if (!isRiwayatAda && !isPesanTunggalAda) {
+        if (elIconBg) elIconBg.className = "w-14 h-14 bg-slate-100 text-slate-500 rounded-full mx-auto flex items-center justify-center text-2xl mb-2 shadow-sm";
+        if (elIcon) elIcon.className = "fa-solid fa-clipboard-check";
+        if (elTitle) elTitle.innerText = "Belum Ada Catatan";
+        if (elBodyBg) elBodyBg.className = "bg-slate-50 p-5 rounded-xl border border-slate-100 text-center relative mt-2";
+        if (elText) {
+            elText.innerText = "Saat ini belum ada catatan baru dari Wali Kelas untuk Ananda. Tetap semangat!";
+            elText.classList.remove('italic');
         }
+    } else if (isRiwayatAda) {
+        if (elIconBg) elIconBg.className = "w-14 h-14 bg-orange-100 text-orange-500 rounded-full mx-auto flex items-center justify-center text-2xl mb-2 shadow-sm animate-bounce";
+        if (elIcon) elIcon.className = "fa-solid fa-comment-dots";
+        if (elTitle) elTitle.innerText = "Riwayat Pesan Wali Kelas";
+        if (elBodyBg) elBodyBg.className = "bg-white p-2 rounded-xl border border-orange-100 text-center relative mt-2 max-h-60 overflow-y-auto"; 
+
+        if (elText) {
+            let htmlList = `<div class="text-left space-y-2">`;
+            riwayat.forEach((pesan, index) => {
+                const bgClass = index === 0 ? "bg-orange-50 border-orange-200" : "bg-slate-50 border-slate-200";
+                htmlList += `
+                <div class="p-3 rounded-lg border ${bgClass} shadow-sm">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-[10px] font-bold text-orange-600"><i class="fa-regular fa-calendar mr-1"></i> ${escapeHTML(pesan.tanggal)}</span>
+                        <span class="text-[9px] text-slate-400">${escapeHTML(pesan.waktu || '')}</span>
+                    </div>
+                    <p class="text-sm text-slate-700 italic">"${escapeHTML(pesan.isi)}"</p>
+                </div>`;
+            });
+            htmlList += `</div>`;
+            elText.innerHTML = htmlList; 
+        }
+        localStorage.setItem(`catatan_terbaca_${nisnUser}`, riwayat[0].id);
+
+    } else if (isPesanTunggalAda) {
+        if (elIconBg) elIconBg.className = "w-14 h-14 bg-orange-100 text-orange-500 rounded-full mx-auto flex items-center justify-center text-2xl mb-2 shadow-sm animate-bounce";
+        if (elIcon) elIcon.className = "fa-solid fa-comment-dots";
+        if (elTitle) elTitle.innerText = "Pesan Wali Kelas";
+        if (elBodyBg) elBodyBg.className = "bg-orange-50 p-5 rounded-xl border border-orange-100 text-center relative mt-2";
+        if (elText) {
+            elText.innerText = pesanTunggal;
+            elText.classList.add('italic');
+        }
+        const idBayangan = btoa(encodeURIComponent(pesanTunggal)).substring(0, 15); 
+        localStorage.setItem(`catatan_terbaca_${nisnUser}`, idBayangan);
     }
 
-    // Ini khusus untuk tombol "Tentang Aplikasi"
-    function bukaInfo() {
-        document.getElementById('modalInfo').style.display = 'flex';
-    }
+    modal.classList.remove('hidden'); 
+    modal.style.display = 'flex';
+};
 
-    function tutupInfo(e) {
-        const el = document.getElementById('modalInfo');
-        if (el && (e === null || e.target.id === 'modalInfo')) {
-            el.style.display = 'none';
-        }
+window.tutupCatatanWali = function(e) {
+    const modal = document.getElementById('modalCatatan');
+    if (modal && (e === null || e.target.id === 'modalCatatan')) {
+        modal.style.display = 'none';
+        modal.classList.add('hidden');
     }
-    //===============================================
-    // --- FUNGSI BUKA PENGUMUMAN DENGAN FORMAT TANGGAL INDONESIA ---
-    //===============================================
-function formatTanggalIndo(tanggalRaw) {
+};
+
+window.bukaInfo = function() {
+    const el = document.getElementById('modalInfo');
+    if (el) el.style.display = 'flex';
+};
+
+window.tutupInfo = function(e) {
+    const el = document.getElementById('modalInfo');
+    if (el && (e === null || e.target.id === 'modalInfo')) {
+        el.style.display = 'none';
+    }
+};
+
+//===============================================
+// --- MODAL PENGUMUMAN SEKOALAH ---
+//===============================================
+
+window.formatTanggalIndo = function(tanggalRaw) {
     if (!tanggalRaw) return "";
-    let teksTanggal = tanggalRaw.toString().split(' ')[0]; 
-    let bagian = teksTanggal.split('/'); 
-    if (bagian.length === 3) {
-        let hari = parseInt(bagian[0], 10); 
-        let angkaBulan = parseInt(bagian[1], 10) - 1; 
-        let tahun = bagian[2];
-        const namaBulan = [
-            "Januari", "Februari", "Maret", "April", "Mei", "Juni", 
-            "Juli", "Agustus", "September", "Oktober", "November", "Desember"
-        ];
-        return `${hari} ${namaBulan[angkaBulan]} ${tahun}`;
-    }
-    return tanggalRaw; 
-}
+    let str = tanggalRaw.toString().trim().split(' ')[0]; 
+    let hari, bulan, tahun;
 
-function bukaPengumuman() {
+    if (str.includes('/')) {
+        const parts = str.split('/');
+        hari = parseInt(parts[0], 10);
+        bulan = parseInt(parts[1], 10) - 1;
+        tahun = parts[2];
+    } else if (str.includes('-')) {
+        const parts = str.split('-');
+        tahun = parts[0];
+        bulan = parseInt(parts[1], 10) - 1;
+        hari = parseInt(parts[2], 10);
+    } else {
+        return tanggalRaw;
+    }
+
+    const namaBulan = [
+        "Januari", "Februari", "Maret", "April", "Mei", "Juni", 
+        "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+    ];
+
+    return (hari && namaBulan[bulan] && tahun) ? `${hari} ${namaBulan[bulan]} ${tahun}` : tanggalRaw;
+};
+
+window.bukaPengumuman = function() {
     const elModal = document.getElementById('modalPengumuman');
     const elKonten = document.getElementById('kontenPengumuman');
-    
-    // Cek apakah HTML modal sudah dipasang
-    if (!elModal || !elKonten) {
-        alert("Waduh, HTML Modal Pengumuman belum terbaca! Pastikan kodenya sudah dipaste di dalam <body>");
-        return;
-    }
 
-    // Tampilkan modal
+    if (!elModal || !elKonten) return alert("HTML Modal Pengumuman belum terpasang!");
+
     elModal.style.display = 'flex';
-    
-    // Ambil data siswa
     const dataString = localStorage.getItem('user_data'); 
-    
+
     if (dataString) {
         const dataSiswa = JSON.parse(dataString);
-        
-        // Cukup pastikan properti 'judul' ada isinya
         if (dataSiswa.info_sekolah && dataSiswa.info_sekolah.judul) {
-            const infoTerbaru = dataSiswa.info_sekolah; 
-            
-            // --- TERAPKAN FORMAT TANGGAL DI SINI ---
-            let tanggalCantik = formatTanggalIndo(infoTerbaru.tanggal);
-            
+            const info = dataSiswa.info_sekolah; 
+            const tanggalCantik = window.formatTanggalIndo(info.tanggal);
+
             elKonten.innerHTML = `
-                <h3 class="text-lg font-bold text-slate-800 mb-1">${infoTerbaru.judul}</h3>
+                <h3 class="text-lg font-bold text-slate-800 mb-1">${info.judul}</h3>
                 <p class="text-xs text-blue-600 font-medium mb-4"><i class="fa-regular fa-calendar"></i> ${tanggalCantik}</p>
-                <div class="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">${infoTerbaru.isi}</div>
+                <div class="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">${info.isi}</div>
             `;
         } else {
             elKonten.innerHTML = `<p class="text-center text-slate-500 py-6">Belum ada pengumuman terbaru.</p>`;
         }
     } else {
-        elKonten.innerHTML = `<p class="text-center text-red-500 py-6">Data tidak ditemukan. Silakan logout dan login kembali.</p>`;
+        elKonten.innerHTML = `<p class="text-center text-red-500 py-6">Data tidak ditemukan. Silakan re-login.</p>`;
     }
-}
+};
 
-function tutupPengumuman(e) {
+window.tutupPengumuman = function(e) {
     const el = document.getElementById('modalPengumuman');
     if (el && (e === null || e.target.id === 'modalPengumuman')) {
         el.style.display = 'none';
     }
-}
+};
 
-    // --- GANTI PASSWORD ---
-    function bukaModalPassword() {
-        document.getElementById('modalGantiPass').classList.remove('hidden');
-    }
+//===============================================
+// --- GANTI PASSWORD & UPLOAD FOTO ---
+//===============================================
 
-    function tutupModalPassword() {
-        document.getElementById('modalGantiPass').classList.add('hidden');
-        document.getElementById('formGantiPass').reset();
-    }
+window.bukaModalPassword = function() {
+    const el = document.getElementById('modalGantiPass');
+    if (el) el.classList.remove('hidden');
+};
 
-    function prosesGantiPass(e) {
-        e.preventDefault();
-        const passBaru = document.getElementById('passBaru').value;
-        const konfirmasi = document.getElementById('konfirmasiPass').value;
-        const btnSimpan = document.getElementById('btnSimpanPass');
+window.tutupModalPassword = function() {
+    const el = document.getElementById('modalGantiPass');
+    if (el) el.classList.add('hidden');
+    const form = document.getElementById('formGantiPass');
+    if (form) form.reset();
+};
 
-        if (!passBaru || !konfirmasi) { alert("Password kosong!"); return; }
-        if (passBaru !== konfirmasi) { alert("Password tidak sama!"); return; }
+window.prosesGantiPass = function(e) {
+    e.preventDefault();
+    const passBaru = document.getElementById('passBaru').value;
+    const konfirmasi = document.getElementById('konfirmasiPass').value;
+    const btnSimpan = document.getElementById('btnSimpanPass');
 
-        const savedData = localStorage.getItem('user_data');
-        let userNISN = "";
+    if (!passBaru || !konfirmasi) return alert("Password kosong!");
+    if (passBaru !== konfirmasi) return alert("Password konfirmasi tidak cocok!");
+
+    const savedData = localStorage.getItem('user_data');
+    let userNISN = "";
+    try {
+        if (savedData) userNISN = JSON.parse(savedData).nisn;
+    } catch(err) { console.error(err); }
+
+    if (!userNISN) return alert("Error: NISN tidak ditemukan, silakan login ulang.");
+
+    const textAsli = btnSimpan.innerText;
+    btnSimpan.innerText = "Menyimpan...";
+    btnSimpan.disabled = true;
+
+    const formData = new FormData();
+    formData.append('action', 'gantiPass');
+    formData.append('nisn', userNISN);
+    formData.append('password', passBaru);
+
+    fetch(SCRIPT_URL, { method: 'POST', body: formData })
+    .then(res => res.text())
+    .then(text => {
+        btnSimpan.innerText = textAsli;
+        btnSimpan.disabled = false;
         try {
-            if (savedData) userNISN = JSON.parse(savedData).nisn;
-        } catch(err) { console.error(err); }
-        
-        if (!userNISN) { alert("Error: NISN tidak ditemukan, silakan login ulang."); return; }
-
-        const textAsli = btnSimpan.innerText;
-        btnSimpan.innerText = "Menyimpan...";
-        btnSimpan.disabled = true;
-
-        const formData = new FormData();
-        formData.append('action', 'gantiPass');
-        formData.append('nisn', userNISN);
-        formData.append('password', passBaru);
-
-        fetch(SCRIPT_URL, {
-            method: 'POST',
-            body: formData
-        })
-        .then(res => res.text()) // PERBAIKAN: Gunakan text() agar tidak crash jika GAS mengirim HTML Error
-        .then(text => {
-            btnSimpan.innerText = textAsli;
-            btnSimpan.disabled = false;
-            try {
-                const result = JSON.parse(text);
-                if (result.status === 'sukses') {
-                    alert("Berhasil ganti password!");
-                    tutupModalPassword();
-                } else {
-                    alert("Gagal: " + result.pesan);
-                }
-            } catch(err) {
-                alert("Terjadi masalah pada server. Pastikan URL Apps Script benar dan di-deploy dengan benar.");
-                console.error("Respons dari server bukan JSON:", text);
+            const result = JSON.parse(text);
+            if (result.status === 'sukses') {
+                alert("Berhasil ganti password!");
+                window.tutupModalPassword();
+            } else {
+                alert("Gagal: " + result.pesan);
             }
-        })
-        .catch(err => {
-            btnSimpan.innerText = textAsli;
-            btnSimpan.disabled = false;
-            alert("Gagal koneksi.");
-            console.error(err);
-        });
-    }
-
-    // --- PROSES UPLOAD FOTO (DIPERBAIKI FORMAT RESPONSE-NYA) ---
-    function prosesUpload(input) {
-        const file = input.files[0];
-        const status = document.getElementById('statusUpload');
-        if (!file) return;
-
-        if (file.size > 2 * 1024 * 1024) {
-            alert("File terlalu besar! Maksimal 2MB.");
-            return;
+        } catch(err) {
+            alert("Terjadi masalah pada server. Pastikan URL Apps Script terkonfigurasi dengan benar.");
+            console.error("Non-JSON response:", text);
         }
+    })
+    .catch(err => {
+        btnSimpan.innerText = textAsli;
+        btnSimpan.disabled = false;
+        alert("Gagal koneksi server.");
+        console.error(err);
+    });
+};
 
-        const reader = new FileReader();
-        status.innerText = "Mengompres & Mengupload...";
-        
-        reader.onload = function(e) {
-            // PERBAIKAN KRUSIAL: Memisahkan header "data:image/jpeg;base64," agar Apps Script tidak gagal memproses gambarnya.
-            const fullBase64 = e.target.result;
-            let cleanBase64 = fullBase64;
-            if (fullBase64.includes(",")) {
-                cleanBase64 = fullBase64.split(",")[1];
-            }
+window.prosesUpload = function(input) {
+    const file = input.files[0];
+    const status = document.getElementById('statusUpload');
+    if (!file) return;
 
-            const formData = new FormData();
-            formData.append('action', 'uploadFoto');
-            formData.append('nisn', user.nisn);
-            formData.append('fileData', cleanBase64); // Kirim yang sudah bersih
-            formData.append('fileName', file.name);
-            formData.append('mimeType', file.type);   // Kirim identitas ekstensi sebagai cadangan
-
-            fetch(SCRIPT_URL, {
-                method: 'POST',
-                body: formData
-            })
-            .then(res => res.text()) // PERBAIKAN: Gunakan text() agar bisa menangkap error "Akses Ditolak" yang berbentuk HTML
-            .then(text => {
-                try {
-                    const resJson = JSON.parse(text);
-                    if (resJson.status === 'sukses') {
-                        status.innerText = "Berhasil! Foto diperbarui.";
-                        
-                        // MENGUBAH VIEW JADI DOWNLOAD AGAR LANGSUNG MUNCUL DI PREVIEW
-                        let linkBaru = resJson.link;
-                        if(linkBaru.includes("export=view")) {
-                            linkBaru = linkBaru.replace("export=view", "export=download");
-                        }
-                        
-                        document.getElementById('foto-siswa').src = linkBaru;
-                        
-                        // Update data lokal
-                        user.foto = resJson.link;
-                        localStorage.setItem('user_data', JSON.stringify(user));
-                    } else {
-                        status.innerText = "Gagal upload.";
-                        alert(resJson.pesan);
-                    }
-                } catch (err) {
-                    status.innerText = "Gagal membaca respons server.";
-                    alert("Akses Server Ditolak/Error. Jika sebelumnya Anda mendapat peringatan 'Akses ditolak DriveApp', artinya GAS Anda masih mengeksekusi versi lama. Pastikan Deploy sebagai Versi Baru.");
-                    console.error("Respons dari server bukan JSON yang valid. Respons:", text);
-                }
-            })
-            .catch(err => {
-                status.innerText = "Kesalahan koneksi.";
-                console.error(err);
-            });
-        };
-        reader.readAsDataURL(file);
-    }
-
-        //============================================
-        // FUNGSI BUKA LAPORAN YAUMIYAH (PASTIKAN pakai window.bukaYaumiyah)
-        //============================================
-window.bukaYaumiyah = function() {
-    const elModal = document.getElementById('modalPengumuman'); 
-    const elKonten = document.getElementById('kontenPengumuman');
-    
-    if (!elModal || !elKonten) {
-        alert("Modal tidak ditemukan di HTML!");
+    if (file.size > 2 * 1024 * 1024) {
+        alert("File terlalu besar! Maksimal 2MB.");
         return;
     }
 
+    const reader = new FileReader();
+    if (status) status.innerText = "Mengompres & Mengupload...";
+
+    reader.onload = function(e) {
+        const fullBase64 = e.target.result;
+        const cleanBase64 = fullBase64.includes(",") ? fullBase64.split(",")[1] : fullBase64;
+
+        const activeUser = window.user || JSON.parse(localStorage.getItem('user_data') || '{}');
+
+        const formData = new FormData();
+        formData.append('action', 'uploadFoto');
+        formData.append('nisn', activeUser.nisn || '');
+        formData.append('fileData', cleanBase64);
+        formData.append('fileName', file.name);
+        formData.append('mimeType', file.type);
+
+        fetch(SCRIPT_URL, { method: 'POST', body: formData })
+        .then(res => res.text())
+        .then(text => {
+            try {
+                const resJson = JSON.parse(text);
+                if (resJson.status === 'sukses') {
+                    if (status) status.innerText = "Berhasil! Foto diperbarui.";
+                    let linkBaru = resJson.link;
+                    if (linkBaru.includes("export=view")) {
+                        linkBaru = linkBaru.replace("export=view", "export=download");
+                    }
+                    const imgEl = document.getElementById('foto-siswa');
+                    if (imgEl) imgEl.src = linkBaru;
+
+                    if (window.user) window.user.foto = resJson.link;
+                    activeUser.foto = resJson.link;
+                    localStorage.setItem('user_data', JSON.stringify(activeUser));
+                } else {
+                    if (status) status.innerText = "Gagal upload.";
+                    alert(resJson.pesan);
+                }
+            } catch (err) {
+                if (status) status.innerText = "Gagal membaca respons server.";
+                alert("Akses Server Ditolak/Error. Pastikan GAS di-deploy sebagai Versi Baru (Web App).");
+                console.error("Non-JSON response:", text);
+            }
+        })
+        .catch(err => {
+            if (status) status.innerText = "Kesalahan koneksi.";
+            console.error(err);
+        });
+    };
+    reader.readAsDataURL(file);
+};
+
+//============================================
+// --- LAPORAN YAUMIYYAH ---
+//============================================
+
+window.bukaYaumiyah = function() {
+    const elModal = document.getElementById('modalPengumuman'); 
+    const elKonten = document.getElementById('kontenPengumuman');
+
+    if (!elModal || !elKonten) return alert("Modal tidak ditemukan di HTML!");
+
     elModal.style.display = 'flex';
     const dataString = localStorage.getItem('user_data'); 
-    
+
     if (dataString) {
         const dataSiswa = JSON.parse(dataString);
         const dataY = dataSiswa.yaumiyah;
@@ -1567,10 +1537,10 @@ window.bukaYaumiyah = function() {
             return;
         }
 
-        // PERBAIKAN: Tambahkan ?.length agar aman jika data kosong/undefined
         let htmlApresiasi = '';
         if (dataY.apresiasi?.length > 0) {
-            htmlApresiasi = `<div class="bg-emerald-50 border border-emerald-200 rounded-lg p-3 mb-3">
+            htmlApresiasi = `
+            <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-3 mb-3">
                 <h4 class="text-sm font-bold text-emerald-700 mb-2"><i class="fa-solid fa-check-circle mr-1"></i> Apresiasi (Sangat Baik/Baik)</h4>
                 <ul class="text-xs text-emerald-800 list-disc pl-5 space-y-1">
                     ${dataY.apresiasi.map(item => `<li>${item}</li>`).join('')}
@@ -1578,10 +1548,10 @@ window.bukaYaumiyah = function() {
             </div>`;
         }
 
-        // PERBAIKAN: Tambahkan ?.length
         let htmlPerhatian = '';
         if (dataY.perhatian?.length > 0) {
-            htmlPerhatian = `<div class="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-3">
+            htmlPerhatian = `
+            <div class="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-3">
                 <h4 class="text-sm font-bold text-orange-700 mb-2"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Perlu Perhatian (Kurang/Jarang)</h4>
                 <ul class="text-xs text-orange-800 list-disc pl-5 space-y-1">
                     ${dataY.perhatian.map(item => `<li>${item}</li>`).join('')}
@@ -1589,7 +1559,6 @@ window.bukaYaumiyah = function() {
             </div>`;
         }
 
-        // Menyusun Kesimpulan Cerdas (Biru) dengan keamanan ?.length
         let teksKesimpulan = "";
         const jumlahPerhatian = dataY.perhatian?.length || 0;
         const jumlahApresiasi = dataY.apresiasi?.length || 0;
@@ -1602,12 +1571,11 @@ window.bukaYaumiyah = function() {
             teksKesimpulan = "Ayah/Bunda, saat ini ananda sangat membutuhkan dukungan dan pendampingan ekstra di rumah. Mari kita rutinkan kembali memantau ibadah dan aktivitas hariannya.";
         }
 
-        let htmlKesimpulan = `
+        const htmlKesimpulan = `
             <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
                 <p class="text-xs text-blue-800 font-medium leading-relaxed"><strong>Kesimpulan Wali Kelas:</strong><br>${teksKesimpulan}</p>
             </div>`;
 
-        // Gabungkan semua ke dalam konten modal
         elKonten.innerHTML = `
             <div class="mb-4 text-center border-b pb-3">
                 <h3 class="text-lg font-bold text-slate-800">Ringkasan Yaumiyah</h3>
@@ -1623,90 +1591,76 @@ window.bukaYaumiyah = function() {
 };
 
         // ==========================================
-    // TAMBAHAN BARU: CEK STATUS BACA SAAT HALAMAN DIMUAT
-    // ==========================================
-    window.cekNotifCatatanWali = function() {
-        // Ambil data yang sama seperti di fungsi bukaCatatanWali
-        const riwayat = window.riwayatPesanWali || [];
-        const pesanTunggal = window.pesanWali || "";
-        const nisnUser = (window.dataUserAktif && window.dataUserAktif.nisn) ? window.dataUserAktif.nisn : 'siswa';
+// --- CEK STATUS BACA CATATAN WALI KELAS ---
+// ==========================================
 
-        let idCatatanSaatIni = null;
+window.cekNotifCatatanWali = function() {
+    const riwayat = window.riwayatPesanWali || [];
+    const pesanTunggal = window.pesanWali || "";
+    const nisnUser = (window.dataUserAktif && window.dataUserAktif.nisn) ? window.dataUserAktif.nisn : 'siswa';
 
-        // Ambil ID dari pesan yang sedang aktif sekarang
-        if (riwayat.length > 0) {
-            idCatatanSaatIni = riwayat[0].id;
-        } else if (pesanTunggal && pesanTunggal !== "-" && pesanTunggal.trim() !== "") {
-            idCatatanSaatIni = btoa(encodeURIComponent(pesanTunggal)).substring(0, 15);
-        }
+    let idCatatanSaatIni = null;
 
-        // Jika memang ada pesan dari wali kelas
-        if (idCatatanSaatIni) {
-            // Cek ke memori HP, apakah ID pesan ini sudah pernah diklik/dibaca sebelumnya?
-            const memoriTerbaca = localStorage.getItem('catatan_terbaca_' + nisnUser);
-
-            if (memoriTerbaca === idCatatanSaatIni) {
-                // JIKA SAMA: Artinya sudah dibaca. Matikan titik merah secara permanen!
-                const elNotif = document.getElementById('notif-dot');
-                const elLabel = document.getElementById('label-catatan'); // Sesuaikan dengan ID teks "1 Pesan Baru" kamu
-
-                if(elNotif) elNotif.classList.add('hidden');
-                if(elLabel) {
-                    elLabel.innerText = "Sudah dibaca";
-                    elLabel.classList.remove('text-orange-600', 'font-bold');
-                    elLabel.classList.add('text-slate-400');
-                }
-            }
-        }
-    };
-
-    // PENTING: Panggil fungsi ini tepat setelah kamu selesai mengambil data dari Google Sheets 
-    // dan selesai merender tampilan Dashboard.
-    // Contoh pemanggilan:
-    // cekNotifCatatanWali();
-
-    // ==========================================
-    // FUNGSI UPDATE SEMESTER
-    // ==========================================
-        function updateSemester() {
-    const date = new Date();
-    const month = date.getMonth(); // 0 = Januari, 11 = Desember
-    const year = date.getFullYear();
-    let semester = "";
-
-    // Logika: 
-    // Januari (0) sampai Juni (5) = Semester Genap
-    // Juli (6) sampai Desember (11) = Semester Ganjil
-    if (month >= 0 && month <= 5) {
-      semester = "Semester Genap " + year;
-    } else {
-      semester = "Semester Ganjil " + year;
+    if (riwayat.length > 0) {
+        idCatatanSaatIni = riwayat[0].id;
+    } else if (pesanTunggal && pesanTunggal !== "-" && pesanTunggal.trim() !== "") {
+        idCatatanSaatIni = btoa(encodeURIComponent(pesanTunggal)).substring(0, 15);
     }
 
-    // Masukkan teks ke dalam HTML
-    document.getElementById("semester-text").innerText = semester;
-  }
+    if (idCatatanSaatIni) {
+        const memoriTerbaca = localStorage.getItem('catatan_terbaca_' + nisnUser);
 
-  // Jalankan fungsi saat halaman dimuat
-  updateSemester();
+        if (memoriTerbaca === idCatatanSaatIni) {
+            const elNotif = document.getElementById('notif-dot');
+            const elLabel = document.getElementById('label-catatan');
 
-        async function bukaModalJadwal() {
-    // 1. AMBIL KELAS LANGSUNG DARI TEKS UTAMA DASHBOARD
+            if (elNotif) elNotif.classList.add('hidden');
+            if (elLabel) {
+                elLabel.innerText = "Sudah dibaca";
+                elLabel.classList.remove('text-orange-600', 'font-bold');
+                elLabel.classList.add('text-slate-400');
+            }
+        }
+    }
+};
+
+// ==========================================
+// --- UPDATE PERIODE SEMESTER DINAMIS ---
+// ==========================================
+
+window.updateSemester = function() {
+    const date = new Date();
+    const month = date.getMonth(); // 0 = Jan, 11 = Des
+    const year = date.getFullYear();
+    let semester = (month >= 0 && month <= 5) ? `Semester Genap ${year}` : `Semester Ganjil ${year}`;
+
+    const elSemester = document.getElementById("semester-text");
+    if (elSemester) elSemester.innerText = semester;
+};
+
+// ==========================================
+// --- MODAL JADWAL PELAJARAN ---
+// ==========================================
+
+window.bukaModalJadwal = async function() {
     const elemenKelas = document.getElementById('kelas-siswa');
     const kelasSiswaLogin = elemenKelas ? elemenKelas.innerText.toString().trim().toUpperCase() : "-";
     
-    // Tampilkan nama kelas di bagian atas pop-up jadwal
-    document.getElementById('infoKelasSiswa').innerText = "Kelas: " + kelasSiswaLogin;
+    const infoKelas = document.getElementById('infoKelasSiswa');
+    if (infoKelas) infoKelas.innerText = "Kelas: " + kelasSiswaLogin;
     
     const tbody = document.getElementById('tabelJadwalBody');
+    if (!tbody) return;
+
     tbody.innerHTML = `<tr><td colspan="2" class="p-4 text-center text-slate-400">Memuat jadwal secara real-time...</td></tr>`;
     
-    document.getElementById('modalJadwal').classList.remove('hidden');
+    const modalJadwal = document.getElementById('modalJadwal');
+    if (modalJadwal) modalJadwal.classList.remove('hidden');
 
     try {
-        // Ambil URL script yang ada di bagian atas kode utama Anda
-        // Kita tambahkan parameter ?action=getJadwal untuk mengambil data langsung
-        const response = await fetch(SCRIPT_URL + "?action=getJadwal");
+        if (typeof SCRIPT_URL === 'undefined') throw new Error("SCRIPT_URL belum didefinisikan");
+
+        const response = await fetch(`${SCRIPT_URL}?action=getJadwal`);
         const dataJadwal = await response.json();
         
         if (!dataJadwal || dataJadwal.length === 0) {
@@ -1714,7 +1668,6 @@ window.bukaYaumiyah = function() {
             return;
         }
 
-        // 2. Cari posisi kolom kelas siswa berdasarkan baris pertama (Header)
         const headerKelas = dataJadwal[0];
         let indeksKolomKelas = -1;
         for (let c = 0; c < headerKelas.length; c++) {
@@ -1725,11 +1678,10 @@ window.bukaYaumiyah = function() {
         }
 
         if (indeksKolomKelas === -1) {
-            tbody.innerHTML = `<tr><td colspan="2" class="p-4 text-center text-amber-500">Jadwal untuk kelas ${kelasSiswaLogin} belum terdaftar di spreadsheet.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="2" class="p-4 text-center text-amber-500">Jadwal untuk kelas ${kelasSiswaLogin} belum terdaftar.</td></tr>`;
             return;
         }
 
-        // 3. Olah data baris per baris
         let jadwalPerHari = {};
         let hariSaatIni = "";
 
@@ -1749,9 +1701,7 @@ window.bukaYaumiyah = function() {
             }
         }
 
-        // Bersihkan teks loading sebelum menampilkan jadwal asli
         tbody.innerHTML = "";
-
         const urutanHari = ["SENIN", "SELASA", "RABU", "KAMIS", "JUMAT", "SABTU"];
         let adaDataJadwal = false;
 
@@ -1783,20 +1733,24 @@ window.bukaYaumiyah = function() {
         console.error("Error load jadwal:", error);
         tbody.innerHTML = `<tr><td colspan="2" class="p-4 text-center text-red-500">Terjadi gangguan koneksi jaringan.</td></tr>`;
     }
-}
+};
 
-function tutupModalJadwal() {
-    document.getElementById('modalJadwal').classList.add('hidden');
-}
+window.tutupModalJadwal = function() {
+    const el = document.getElementById('modalJadwal');
+    if (el) el.classList.add('hidden');
+};
+
 // ==========================================
-// FUNGSI BUKA LAPORAN AKADEMIK (VERSI AUTO-REFRESH)
+// --- MODAL LAPORAN AKADEMIK ---
 // ==========================================
-async function bukaLaporanAkademik() {
+
+window.bukaLaporanAkademik = async function() {
     const modal = document.getElementById('modal-akademik');
     const wrapper = document.getElementById('wrapper-modal-akademik');
     const list = document.getElementById('list-mapel-akademik');
 
-    // 1. Tampilkan animasi loading agar ortu tahu sistem sedang bekerja
+    if (!list) return;
+
     list.innerHTML = `
         <div class="flex flex-col items-center justify-center py-8">
             <div class="flex space-x-1.5 mb-3">
@@ -1808,47 +1762,39 @@ async function bukaLaporanAkademik() {
         </div>
     `;
     
-    modal.classList.remove('hidden');
+    if (modal) modal.classList.remove('hidden');
     setTimeout(() => {
         if (wrapper) wrapper.classList.remove('translate-y-full');
     }, 10);
 
     try {
-        // 2. Ambil "kunci" untuk menembak API dari brankas
         const savedNisn = localStorage.getItem('nisn');
         const savedPass = localStorage.getItem('user_pass');
 
-        // Jika kunci lengkap, diam-diam kita tembak GAS di latar belakang
         if (savedNisn && savedPass && typeof SCRIPT_URL !== 'undefined') {
             const url = `${SCRIPT_URL}?username=${encodeURIComponent(savedNisn)}&password=${encodeURIComponent(savedPass)}`;
-            
             const response = await fetch(url, { cache: 'no-store' });
             const freshData = await response.json();
 
             if (freshData.result === 'success') {
-                // Update brankas lokal dengan data yang baru
                 localStorage.setItem('user_data', JSON.stringify(freshData));
-                
-                // Update variabel global 'user' agar sinkron
-                user = freshData; 
+                window.user = freshData; 
             }
         }
     } catch (error) {
         console.error("Gagal refresh data di latar belakang:", error);
-        // Jika gagal (misal sinyal jelek), kita lanjut pakai data lama yang sudah ada di memori
     }
 
-    // 3. Render ulang list menggunakan data (yang sudah pasti terbaru jika proses di atas berhasil)
-    const dataAkademik = user.akademik; 
+    const activeUser = window.user || JSON.parse(localStorage.getItem('user_data') || '{}');
+    const dataAkademik = activeUser.akademik; 
    
     if (!dataAkademik || dataAkademik.length === 0) {
         list.innerHTML = "<p class='text-center text-xs text-slate-400 py-4'>Data belum tersedia</p>";
         return;
     }
 
-    list.innerHTML = ""; // Bersihkan teks loading
+    list.innerHTML = ""; 
     
-    // Logika pewarnaan kamu tidak saya ubah sama sekali, tetap aman
     dataAkademik.forEach(item => {
         let colorClass = "bg-slate-100 text-slate-400 border-slate-200";
         if (item.warna === "emerald") colorClass = "bg-emerald-50 text-emerald-600 border-emerald-100";
@@ -1867,203 +1813,159 @@ async function bukaLaporanAkademik() {
         `;
         list.insertAdjacentHTML('beforeend', html);
     });
-}
+};
 
-// ==========================================
-// FUNGSI TUTUP LAPORAN AKADEMIK (IKUT DISERTAKAN)
-// ==========================================
-function tutupLaporanAkademik() {
+window.tutupLaporanAkademik = function() {
     const modal = document.getElementById('modal-akademik');
     const wrapper = document.getElementById('wrapper-modal-akademik');
     
-    // Beri animasi turun/keluar sebelum ditutup
     if (wrapper) wrapper.classList.add('translate-y-full');
     
     setTimeout(() => {
         if (modal) modal.classList.add('hidden');
-    }, 300); // Menunggu 0.3 detik sampai animasi selesai
-}
+    }, 300);
+};
 
-        //===========================================
-        // --- SISTEM AUTO-REFRESH LATAR BELAKANG ---
-        //===========================================
-async function segarkanDashboardDiamDiam() {
+// ==========================================
+// --- SISTEM AUTO-REFRESH LATAR BELAKANG ---
+// ==========================================
+
+window.segarkanDashboardDiamDiam = async function() {
     const savedNisn = localStorage.getItem('nisn');
     const savedPass = localStorage.getItem('user_pass');
 
-    // Pastikan user punya kunci
+    const safeSetText = (id, val) => {
+        if (typeof setText === 'function') setText(id, val);
+        else {
+            const el = document.getElementById(id);
+            if (el) el.innerText = val;
+        }
+    };
+
     if (savedNisn && savedPass && typeof SCRIPT_URL !== 'undefined') {
         try {
-            // Tembak GAS di latar belakang
             const url = `${SCRIPT_URL}?username=${encodeURIComponent(savedNisn)}&password=${encodeURIComponent(savedPass)}`;
             const response = await fetch(url, { cache: 'no-store' });
             const freshData = await response.json();
 
             if (freshData.result === 'success') {
-                // 1. Simpan data baru ke brankas
                 localStorage.setItem('user_data', JSON.stringify(freshData));
-                user = freshData; 
+                window.user = freshData; 
 
-                // 2. RENDER ULANG ABSENSI SAJA TANPA REFRESH HALAMAN
-                if (user.absensi) {
-                    const persenTeks = user.absensi.persen || "0%";
-                    setText('absen-persen', persenTeks);
+                if (window.user.absensi) {
+                    const persenTeks = window.user.absensi.persen || "0%";
+                    safeSetText('absen-persen', persenTeks);
 
                     let persenAngka = parseFloat(persenTeks.replace(',', '.').replace('%', '')) || 0;
                     let derajat = (persenAngka / 100) * 360;
                     const ring = document.getElementById('absen-ring');
-                    if(ring) ring.style.setProperty('--percent', derajat + 'deg');
+                    if (ring) ring.style.setProperty('--percent', derajat + 'deg');
 
-                    setText('val-h', (user.absensi.h || 0) + " H");
-                    setText('val-s', (user.absensi.s || 0) + " S");
-                    setText('val-i', (user.absensi.i || 0) + " I");
-                    setText('val-a', (user.absensi.a || 0) + " A");
+                    safeSetText('val-h', (window.user.absensi.h || 0) + " H");
+                    safeSetText('val-s', (window.user.absensi.s || 0) + " S");
+                    safeSetText('val-i', (window.user.absensi.i || 0) + " I");
+                    safeSetText('val-a', (window.user.absensi.a || 0) + " A");
 
-                    updateStatusHarian(user.absensi.statusToday);
-                } else {
+                    if (typeof updateStatusHarian === 'function') {
+                        updateStatusHarian(window.user.absensi.statusToday);
+                    }
+                } else if (typeof updateStatusHarian === 'function') {
                     updateStatusHarian("");
                 }
             }
         } catch (error) {
-            console.log("Sistem gagal menyegarkan data di latar belakang. Tetap pakai data lama.");
+            console.log("Gagal menyegarkan data latar belakang. Menggunakan data cache.");
         }
     }
-}
+};
 
-// PEMICU 1: Saat halaman di-refresh manual (Tarik ke bawah / F5)
-window.addEventListener('load', segarkanDashboardDiamDiam);
+window.addEventListener('load', () => {
+    window.updateSemester();
+    window.segarkanDashboardDiamDiam();
+});
 
-// PEMICU 2: Saat Ortu pindah tab / buka layar HP kembali (Visibility API)
 document.addEventListener("visibilitychange", function() {
     if (document.visibilityState === 'visible') {
-        // Beri jeda 500ms agar browser stabil dulu setelah "bangun"
-        setTimeout(segarkanDashboardDiamDiam, 500);
+        setTimeout(window.segarkanDashboardDiamDiam, 500);
     }
 });
 
-        // Fungsi untuk merender/memasukkan data guru ke dalam tabel HTML
-function renderTabelGuru(dataGuru) {
-    const tbody = document.getElementById('isi-tabel-guru');
-    
-    if (!dataGuru || dataGuru.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-slate-400">📭 Data guru belum tersedia atau gagal dimuat.</td></tr>`;
-        return;
-    }
-    
-    let htmlContent = '';
-    dataGuru.forEach(guru => {
-        htmlContent += `
-            <tr class="border-b border-slate-100 hover:bg-slate-50 transition">
-                <td class="px-3 py-3 text-left font-medium text-slate-800">${guru["Nama Lengkap"]}</td>
-                <td class="px-3 py-3 text-center text-slate-600">${guru["NIP/NIY"]}</td>
-                <td class="px-3 py-3 text-left text-slate-600">${guru["Jabatan Utama"]}</td>
-                <td class="px-3 py-3 text-left text-slate-600">${guru["Tugas Tambahan"]}</td>
-                <td class="px-3 py-3 text-left text-slate-600">${guru["Alamat Domisili"]}</td>
-                <td class="px-3 py-3 text-left text-slate-600">${guru["No HP"]}</td>
-            </tr>
-        `;
-    });
-    tbody.innerHTML = htmlContent;
-}
-
-        // ==========================================
-// PENGGANTI BAGIAN 4: Mengambil Data Baru
 // ==========================================
-function bukaModalGuru() {
-    console.log("Mencoba mengambil data guru terbaru..."); 
+// --- DIREKTORI DATA GURU ---
+// ==========================================
+
+window.renderTabelGuru = function(daftar) {
+    const elTabel = document.getElementById('isi-tabel-guru');
+    if (!elTabel) return; 
+
+    if (!daftar || daftar.length === 0) {
+        elTabel.innerHTML = `<tr><td colspan="6" class="text-center text-slate-400 py-8">Belum ada data guru</td></tr>`;
+        return;
+    } 
     
-    // 1. Munculkan Modal
+    let html = '';
+    daftar.forEach(guru => {
+        html += `
+        <tr class="border-b border-slate-100 hover:bg-emerald-50 transition-colors">
+            <td class="px-3 py-3 text-left font-medium text-slate-800">${guru['Nama Lengkap'] || '-'}</td>
+            <td class="px-3 py-3 text-center text-slate-600">${guru['NIP/NIY'] || '-'}</td>
+            <td class="px-3 py-3 text-left text-slate-600">${guru['Jabatan Utama'] || '-'}</td>
+            <td class="px-3 py-3 text-left text-slate-600">${guru['Tugas Tambahan'] || '-'}</td>
+            <td class="px-3 py-3 text-left text-slate-600">${guru['Alamat Domisili'] || '-'}</td>
+            <td class="px-3 py-3 text-left text-slate-600">${guru['No HP'] || '-'}</td> 
+        </tr>`;
+    });
+    
+    elTabel.innerHTML = html;
+};
+
+window.bukaModalGuru = function() {
     const modal = document.getElementById('modalGuru');
     if (modal) {
         modal.style.display = 'flex'; 
         modal.classList.remove('hidden'); 
     }
     
-    // 2. Munculkan teks loading
     const tbody = document.getElementById('isi-tabel-guru');
     if (tbody) {
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-emerald-600 font-medium animate-pulse">⏳ Memperbarui data dari Google Sheets...</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-emerald-600 font-medium animate-pulse">⏳ Memperbarui data dari server...</td></tr>`;
     }
     
-    // 3. URL yang sudah diperbaiki (TIDAK DOUBLE)
-    const urlApp = "https://script.google.com/macros/s/AKfycbxiDToc3gBf0sWDvPe81G5rMpY_mixbY5JhcbLUvmjZgzv1qTSx7BWtOvfXdHMQg7nfUw/exec"; 
+    const baseUrl = typeof SCRIPT_URL !== 'undefined' 
+        ? SCRIPT_URL 
+        : "https://script.google.com/macros/s/AKfycbxiDToc3gBf0sWDvPe81G5rMpY_mixbY5JhcbLUvmjZgzv1qTSx7BWtOvfXdHMQg7nfUw/exec";
+
     const timestamp = new Date().getTime();
-    const urlGAS = `${urlApp}?action=getDaftarGuru&nocache=${timestamp}`;
+    const urlGAS = `${baseUrl}?action=getDaftarGuru&nocache=${timestamp}`;
     
-    // 4. Proses Fetch (Ambil Data)
     fetch(urlGAS)
         .then(response => {
             if (!response.ok) throw new Error("Jaringan bermasalah");
             return response.json();
         })
         .then(dataTerbaru => {
-            console.log("✅ Data guru terbaru berhasil diterima:", dataTerbaru);
-            
-            // Simpan data terbaru jika diperlukan di fitur lain
             window.semuaDataGuru = dataTerbaru;
-            
-            // Panggil fungsi pencetak tabel di bawah
-            renderTabelGuru(dataTerbaru);
+            window.renderTabelGuru(dataTerbaru);
         })
         .catch(error => {
-            console.error("❌ Gagal memuat data:", error);
+            console.error("Gagal memuat data guru:", error);
             if (tbody) {
                 tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-red-500 font-medium">❌ Gagal memuat data dari server. Silakan coba lagi.</td></tr>`;
             }
         });
-}
+};
 
-// ==========================================
-// PENGGANTI BAGIAN 5: Mencetak Data ke Tabel
-// ==========================================
-function renderTabelGuru(daftar) {
-    const elTabel = document.getElementById('isi-tabel-guru');
-    if (!elTabel) return; 
-
-    // Jika data kosong
-    if (!daftar || daftar.length === 0) {
-        elTabel.innerHTML = `<tr><td colspan="6" class="text-center text-slate-400 py-8">Belum ada data guru</td></tr>`;
-        return;
-    } 
-    
-    // Jika data ada, susun baris HTML
-    let html = '';
-    daftar.forEach(guru => {
-        html += `
-        <tr class="border-b border-slate-100 hover:bg-emerald-50 transition-colors">
-            <td class="px-3 py-3 text-left">${guru['Nama Lengkap'] || '-'}</td>
-            <td class="px-3 py-3 text-center">${guru['NIP/NIY'] || '-'}</td>
-            <td class="px-3 py-3 text-left">${guru['Jabatan Utama'] || '-'}</td>
-            <td class="px-3 py-3 text-left">${guru['Tugas Tambahan'] || '-'}</td>
-            <td class="px-3 py-3 text-left">${guru['Alamat Domisili'] || '-'}</td>
-            <td class="px-3 py-3 text-left">${guru['No HP'] || '-'}</td> 
-        </tr>`;
-    });
-    
-    // Suntikkan ke dalam tabel
-    elTabel.innerHTML = html;
-}
-
-// ==========================================
-// FUNGSI UNTUK MENUTUP MODAL GURU
-// ==========================================
-function tutupModalGuru(event) {
-    // 1. Cek jika diklik dari area luar (overlay gelap)
-    if (event) {
-        // Pastikan yang diklik benar-benar id 'modalGuru' (area gelap), bukan isi putihnya
-        if (event.target.id !== 'modalGuru') {
-            return; // Hentikan fungsi agar modal tidak tertutup saat tabel diklik
-        }
+window.tutupModalGuru = function(event) {
+    if (event && event.target.id !== 'modalGuru' && !event.target.closest('#btnTutupGuru')) {
+        return; 
     }
     
-    // 2. Proses menutup modal
     const modal = document.getElementById('modalGuru');
     if (modal) {
-        modal.style.display = 'none';      // Sembunyikan modal
-        modal.classList.add('hidden');     // Tambahkan class hidden kembali (jika pakai Tailwind)
+        modal.style.display = 'none'; 
+        modal.classList.add('hidden'); 
     }
-}
-        
+};
 </script>
 
 </body>
