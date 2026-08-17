@@ -360,7 +360,7 @@
     </div>
                 
     <!-- KOTAK MUTABAAH YAUMIYAH -->
-    <div onclick="window.location.href='https://aktechmaster.github.io/Form-Ibadah-Mingguan-Siswa-SMA/'" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 active:scale-95 transition cursor-pointer group hover:border-emerald-300 relative overflow-hidden flex flex-col justify-between">
+<div onclick="window.location.href='https://aktechmaster.github.io/Form-Ibadah-Mingguan-Siswa-SMA/'" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 active:scale-95 transition cursor-pointer group hover:border-emerald-300 relative overflow-hidden flex flex-col justify-between">
     <div class="absolute top-0 right-0 w-12 h-12 bg-emerald-50 rounded-bl-3xl -mr-2 -mt-2 z-0 group-hover:scale-150 transition duration-500"></div>
     <div class="relative z-10">
         <div class="w-9 h-9 bg-emerald-100 text-emerald-600 rounded-lg flex items-center justify-center text-sm mb-3 group-hover:bg-emerald-600 group-hover:text-white transition">
@@ -369,9 +369,10 @@
         <h4 class="font-bold text-slate-700 text-[11px]">Mutabaah Yaumiyah</h4>
         <p class="text-[9px] text-slate-400 mt-1 leading-tight mb-2">Ibadah & Aktivitas Harian</p>
         
-        <span onclick="event.stopPropagation(); bukaYaumiyah();" class="inline-block text-[10px] text-emerald-600 font-bold hover:text-emerald-800 transition active:scale-90">
+        <!-- DIPERBAIKI: Menggunakan tag button dan memanggil bukaLaporanAkademik() -->
+        <button type="button" onclick="event.stopPropagation(); bukaLaporanAkademik();" class="inline-block text-[10px] text-emerald-600 font-bold hover:text-emerald-800 transition active:scale-90 text-left focus:outline-none">
             Lihat Laporan <i class="fa-solid fa-arrow-right ml-1"></i>
-        </span>
+        </button>
     </div>
 </div>
 
